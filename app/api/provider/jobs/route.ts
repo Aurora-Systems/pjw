@@ -1,0 +1,41 @@
+import type { NextRequest } from "next/server";
+import { sql } from "@/lib/db";
+import { getAuth } from "@/lib/auth";
+import { json, error, preflight } from "@/lib/http";
+
+export const runtime = "nodejs";
+
+export function OPTIONS() {
+  return preflight();
+}
+
+/**
+ * GET /api/provider/jobs — open jobs the provider can bid on.
+ * Excludes the provider's own jobs; flags jobs they've already bid on.
+ * Optional ?category= filter.
+ */
+export async function GET(req: NextRequest) {
+  const auth = await getAuth(req);
+  if (!auth) return error("Unauthorized", 401);
+  if (auth.role !== "provider") return error("Providers only", 403);
+
+  const category = req.nextUrl.searchParams.get("category");
+
+  const text = `
+    SELECT j.id, j.title, j.category, j.description, j.budget_min, j.budget_max,
+           j.when_text, j.location, j.created_at,
+           cu.full_name AS customer_name,
+           COUNT(b.id)::int AS bid_count,
+           BOOL_OR(b.provider_id = $1) AS has_my_bid
+    FROM jobs j
+    JOIN users cu ON cu.id = j.customer_id
+    LEFT JOIN bids b ON b.job_id = j.id
+    WHERE j.status = 'open' AND j.customer_id <> $1
+      AND ($2::text IS NULL OR j.category = $2)
+    GROUP BY j.id, cu.full_name
+    ORDER BY j.created_at DESC
+    LIMIT 50
+  `;
+  const jobs = await sql.query(text, [auth.sub, category]);
+  return json({ jobs });
+}

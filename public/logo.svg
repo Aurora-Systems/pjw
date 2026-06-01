@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Toolbox body -->
+  <rect x="4" y="18" width="40" height="24" rx="4" fill="#2563EB"/>
+  <!-- Toolbox lid -->
+  <rect x="6" y="14" width="36" height="6" rx="2" fill="#1D4ED8"/>
+  <!-- Handle -->
+  <path d="M18 14V10C18 7.79086 19.7909 6 22 6H26C28.2091 6 30 7.79086 30 10V14" stroke="#1E40AF" stroke-width="2.5" fill="none"/>
+  <!-- Wrench icon -->
+  <path d="M28.5 26.5C28.5 24.567 26.933 23 25 23C23.6 23 22.39 23.82 21.84 25H17V29H21.84C22.39 30.18 23.6 31 25 31C26.933 31 28.5 29.433 28.5 27.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="25" cy="27" r="1.5" fill="white"/>
+  <!-- Divider line -->
+  <line x1="24" y1="34" x2="24" y2="38" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

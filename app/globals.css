@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────
+   Pocket Jobs — Design Tokens
+   ─────────────────────────────────────────── */
+:root {
+  --pj-blue-50: #EFF6FF;
+  --pj-blue-100: #DBEAFE;
+  --pj-blue-200: #BFDBFE;
+  --pj-blue-300: #93C5FD;
+  --pj-blue-400: #60A5FA;
+  --pj-blue-500: #3B82F6;
+  --pj-blue-600: #2563EB;
+  --pj-blue-700: #1D4ED8;
+  --pj-blue-800: #1E40AF;
+  --pj-blue-900: #1E3A8A;
+
+  --pj-sky-400: #38BDF8;
+  --pj-sky-500: #0EA5E9;
+
+  --pj-slate-50: #F8FAFC;
+  --pj-slate-100: #F1F5F9;
+  --pj-slate-200: #E2E8F0;
+  --pj-slate-300: #CBD5E1;
+  --pj-slate-400: #94A3B8;
+  --pj-slate-500: #64748B;
+  --pj-slate-600: #475569;
+  --pj-slate-700: #334155;
+  --pj-slate-800: #1E293B;
+  --pj-slate-900: #0F172A;
+
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-pj-blue-50: var(--pj-blue-50);
+  --color-pj-blue-100: var(--pj-blue-100);
+  --color-pj-blue-200: var(--pj-blue-200);
+  --color-pj-blue-300: var(--pj-blue-300);
+  --color-pj-blue-400: var(--pj-blue-400);
+  --color-pj-blue-500: var(--pj-blue-500);
+  --color-pj-blue-600: var(--pj-blue-600);
+  --color-pj-blue-700: var(--pj-blue-700);
+  --color-pj-blue-800: var(--pj-blue-800);
+  --color-pj-blue-900: var(--pj-blue-900);
+
+  --color-pj-sky-400: var(--pj-sky-400);
+  --color-pj-sky-500: var(--pj-sky-500);
+
+  --color-pj-slate-50: var(--pj-slate-50);
+  --color-pj-slate-100: var(--pj-slate-100);
+  --color-pj-slate-200: var(--pj-slate-200);
+  --color-pj-slate-300: var(--pj-slate-300);
+  --color-pj-slate-400: var(--pj-slate-400);
+  --color-pj-slate-500: var(--pj-slate-500);
+  --color-pj-slate-600: var(--pj-slate-600);
+  --color-pj-slate-700: var(--pj-slate-700);
+  --color-pj-slate-800: var(--pj-slate-800);
+  --color-pj-slate-900: var(--pj-slate-900);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.6s ease-out both;
+  --animate-fade-in-up: fade-in-up 0.6s ease-out both;
+  --animate-fade-in-down: fade-in-down 0.5s ease-out both;
+  --animate-slide-in-right: slide-in-right 0.4s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-delay: float 6s ease-in-out 2s infinite;
+  --animate-float-slow: float 8s ease-in-out 1s infinite;
+  --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+  --animate-count-up: count-up 2s ease-out both;
+  --animate-marquee: marquee 30s linear infinite;
+}
+
+/* ───────────────────────────────────────────
+   Keyframe Animations
+   ─────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ───────────────────────────────────────────
+   Global Styles
+   ─────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--pj-slate-100);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pj-blue-300);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pj-blue-500);
+}
+
+/* ───────────────────────────────────────────
+   Utility Classes
+   ─────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-solid {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, var(--pj-blue-600) 0%, var(--pj-blue-800) 50%, var(--pj-blue-900) 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, var(--pj-blue-50) 0%, #FFFFFF 40%, var(--pj-blue-50) 70%, #FFFFFF 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--pj-blue-600), var(--pj-sky-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Intersection Observer animation triggers */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger delays for children */
+.stagger-1 { transition-delay: 0.1s; }
+.stagger-2 { transition-delay: 0.2s; }
+.stagger-3 { transition-delay: 0.3s; }
+.stagger-4 { transition-delay: 0.4s; }
+.stagger-5 { transition-delay: 0.5s; }
+.stagger-6 { transition-delay: 0.6s; }
+.stagger-7 { transition-delay: 0.7s; }
+.stagger-8 { transition-delay: 0.8s; }
