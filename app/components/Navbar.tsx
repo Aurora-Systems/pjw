@@ -10,7 +10,6 @@ const navLinks = [
   { label: "Find Work", href: "#categories" },
   { label: "Find Talent", href: "#how-it-works" },
   { label: "Why PocketJobs", href: "#why-pocketjobs" },
-  { label: "Enterprise", href: "#stats" },
 ];
 
 export default function Navbar() {

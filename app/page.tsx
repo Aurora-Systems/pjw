@@ -31,7 +31,6 @@ function useScrollAnimation() {
 const categories = [
   {
     name: "Home & Property Services",
-    count: "1,200+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -40,7 +39,6 @@ const categories = [
   },
   {
     name: "Moving & Delivery Services",
-    count: "450+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
@@ -49,7 +47,6 @@ const categories = [
   },
   {
     name: "Family & Personal Care Services",
-    count: "620+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
@@ -58,7 +55,6 @@ const categories = [
   },
   {
     name: "Education & Professional Services",
-    count: "850+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M12 21v-8.25" />
@@ -67,7 +63,6 @@ const categories = [
   },
   {
     name: "Creative & Digital Services",
-    count: "1,500+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25" />
@@ -76,7 +71,6 @@ const categories = [
   },
   {
     name: "Events & Entertainment Services",
-    count: "350+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l-1.81-5.096L2.1 14.1 7.2 13.2l.813-5.096L9.813 13.1l5.096.9-5.096.904zM19.007 6.007L18.5 8.5l-.507-2.493L15.5 5.5l2.493-.507L18.5 2.5l.507 2.493L21.5 5.5l-2.493.507z" />
@@ -85,7 +79,6 @@ const categories = [
   },
   {
     name: "Automotive Services",
-    count: "510+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM18.75 18.75a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM3.75 12h16.5M4.5 12l1.637-4.912a1.5 1.5 0 0 1 1.423-1.025h8.88a1.5 1.5 0 0 1 1.423 1.025L19.5 12M3 15.75h18" />
@@ -94,7 +87,6 @@ const categories = [
   },
   {
     name: "Labour & Construction Services",
-    count: "980+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A1.24 1.24 0 1 0 19 19.25l-5.83-5.83M11.42 15.17a3 3 0 1 1-4.24-4.24 3 3 0 0 1 4.24 4.24ZM3.75 6.75h16.5M3.75 12h16.5M12 12V3" />
@@ -103,7 +95,6 @@ const categories = [
   },
   {
     name: "Health, Wellness & Fitness",
-    count: "290+",
     icon: (
       <svg className="w-6 h-6 text-pj-blue-600 group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0Z" />
@@ -170,49 +161,9 @@ const features = [
     description: "Built-in chat, file sharing, and project tracking tools keep everyone aligned.",
   },
   {
-    title: "Global Talent Pool",
-    description: "Access skilled professionals from 150+ countries across every time zone.",
+    title: "Local Talent Pool",
+    description: "Connect with verified tradespeople, freelancers, and laborers across Zimbabwe and Africa.",
   },
-];
-
-const stats = [
-  { value: "50K+", label: "Freelancers" },
-  { value: "10K+", label: "Businesses" },
-  { value: "1M+", label: "Jobs Posted" },
-  { value: "98%", label: "Satisfaction" },
-];
-
-const testimonials = [
-  {
-    quote: "PocketJobs transformed our hiring process. We found an incredible developer within 24 hours who delivered beyond expectations.",
-    name: "Sarah Chen",
-    role: "CTO at TechFlow",
-    rating: 5,
-    avatar: "SC",
-  },
-  {
-    quote: "As a freelance designer, PocketJobs gives me access to premium clients. The platform is intuitive and payments are always on time.",
-    name: "Marcus Johnson",
-    role: "Senior UI Designer",
-    rating: 5,
-    avatar: "MJ",
-  },
-  {
-    quote: "We scaled our marketing team from 2 to 15 using PocketJobs. The quality of talent on this platform is unmatched.",
-    name: "Elena Rodriguez",
-    role: "VP of Marketing, GrowthLabs",
-    rating: 5,
-    avatar: "ER",
-  },
-];
-
-const trustedLogos = [
-  "Microsoft",
-  "Airbnb",
-  "Spotify",
-  "Shopify",
-  "Stripe",
-  "Notion",
 ];
 
 /* ─── Page Component ─── */
@@ -247,7 +198,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pj-blue-50 border border-pj-blue-100 mb-8 animate-fade-in">
               <span className="w-2 h-2 rounded-full bg-pj-blue-500 animate-pulse-soft" />
               <span className="text-sm font-medium text-pj-blue-700">
-                Trusted by 10,000+ businesses worldwide
+                Built in Zimbabwe for Africa&apos;s workforce
               </span>
             </div>
 
@@ -399,7 +350,6 @@ export default function Home() {
                 <h3 className="font-bold text-pj-slate-900 text-[15px] leading-snug mb-1.5 group-hover:text-pj-blue-600 transition-colors">
                   {cat.name}
                 </h3>
-                <p className="text-xs text-pj-slate-400 font-semibold">{cat.count} active gigs</p>
               </div>
             ))}
           </div>
@@ -506,102 +456,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          STATS SECTION
-          ══════════════════════════════════════════ */}
-      <section id="stats" className="py-20 lg:py-24 gradient-blue relative overflow-hidden">
-        {/* Decorative */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="animate-on-scroll text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 text-balance">
-              The numbers speak for themselves
-            </h2>
-            <p className="animate-on-scroll text-lg text-blue-200 max-w-2xl mx-auto">
-              Join a thriving marketplace trusted by freelancers and businesses around the globe.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {stats.map((stat, i) => (
-              <div
-                key={stat.label}
-                className={`animate-on-scroll stagger-${i + 1} text-center bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:bg-white/15 transition-all duration-300`}
-              >
-                <div className="text-4xl sm:text-5xl font-extrabold text-white mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-blue-200 font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          TESTIMONIALS
-          ══════════════════════════════════════════ */}
-      <section id="testimonials" className="py-20 lg:py-28 bg-pj-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="animate-on-scroll inline-block px-4 py-1.5 rounded-full bg-pj-blue-50 text-pj-blue-600 text-sm font-semibold mb-4">
-              Testimonials
-            </span>
-            <h2 className="animate-on-scroll text-3xl sm:text-4xl lg:text-5xl font-bold text-pj-slate-900 mb-4 text-balance">
-              What our community says
-            </h2>
-            <p className="animate-on-scroll text-lg text-pj-slate-500 max-w-2xl mx-auto">
-              Hear from businesses and freelancers who found success on PocketJobs.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {testimonials.map((t, i) => (
-              <div
-                key={t.name}
-                className={`animate-on-scroll stagger-${i + 1} bg-white rounded-2xl p-8 border border-pj-slate-100 hover:shadow-lg hover:shadow-pj-blue-900/5 hover:-translate-y-1 transition-all duration-300`}
-              >
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <svg
-                      key={j}
-                      className="w-5 h-5 text-amber-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p className="text-pj-slate-700 leading-relaxed mb-6 text-[15px]">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-
-                {/* Author */}
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-pj-blue-100 text-pj-blue-600 flex items-center justify-center font-bold text-sm">
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-pj-slate-900 text-sm">
-                      {t.name}
-                    </div>
-                    <div className="text-xs text-pj-slate-400">{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>

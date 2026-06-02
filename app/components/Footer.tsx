@@ -6,40 +6,24 @@ const footerColumns = [
     title: "For Clients",
     links: [
       { label: "How to Hire", href: "/signup" },
-      { label: "Talent Marketplace", href: "/signup" },
-      { label: "Project Catalog", href: "/#categories" },
-      { label: "Hire an Agency", href: "/signup" },
-      { label: "Enterprise", href: "/#stats" },
-      { label: "Any Hire", href: "/signup" },
+      { label: "Browse Categories", href: "/#categories" },
     ],
   },
   {
     title: "For Freelancers",
     links: [
       { label: "How to Find Work", href: "/signup" },
-      { label: "Direct Contracts", href: "/signup" },
-      { label: "Find Jobs Worldwide", href: "/#categories" },
-      { label: "Win Work with Ads", href: "/signup" },
-      { label: "Exclusive Resources", href: "/resources/blog" },
+      { label: "Browse Categories", href: "/#categories" },
     ],
   },
   {
     title: "Resources",
-    links: [
-      { label: "Help & Support", href: "/resources/support" },
-      { label: "Success Stories", href: "/resources/stories" },
-      { label: "Reviews", href: "/resources/reviews" },
-      { label: "Blog", href: "/resources/blog" },
-      { label: "Community", href: "/resources/community" },
-    ],
+    links: [{ label: "Help & Support", href: "/resources/support" }],
   },
   {
     title: "Company",
     links: [
       { label: "About Us", href: "/company/about" },
-      { label: "Leadership", href: "/company/leadership" },
-      { label: "Investor Relations", href: "/company/investors" },
-      { label: "Careers", href: "/company/careers" },
       { label: "Contact Us", href: "/company/contact" },
     ],
   },
