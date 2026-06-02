@@ -2,9 +2,11 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import type { NextRequest } from "next/server";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "dev-pocketjobs-secret-change-me-in-production"
-);
+const rawSecret = process.env.JWT_SECRET;
+if (!rawSecret) {
+  throw new Error("JWT_SECRET is not set");
+}
+const secret = new TextEncoder().encode(rawSecret);
 
 export type UserRole = "customer" | "provider" | "corporate" | "admin";
 
