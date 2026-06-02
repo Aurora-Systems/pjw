@@ -75,19 +75,32 @@ pnpm lint           # Run ESLint
 - ✅ **Neon database integration** — Postgres `pocket_jobs` (project `bitter-cloud-47367937`), schema +
   seed data live. Tables: users, provider_profiles, provider_services, categories, jobs, bids, bookings,
   reviews, conversations, messages, notifications.
-- ✅ Authentication backend (custom JWT) — currently serves the **mobile** client.
-- 🔲 Wire the web login/signup pages to these API routes
-- 🔲 Web dashboard pages
-- 🔲 Web job posting/browsing UI
+- ✅ **Auth = Neon Auth passwordless email OTP** (Better Auth, provisioned on this Neon project; schema
+  `neon_auth` in the `neondb` DB). Our API proxies it (`lib/neonauth.ts`) and, on verify, maps the Neon Auth
+  user to a local `users` row and issues our own app JWT (`lib/auth.ts`). Local `users.auth_id` links the two.
+- ✅ **Functional web app** (consumes the API; auth via Neon Auth email OTP). Login/Signup are wired to OTP
+  (+ role & individual/company choice, with a dev-login shortcut). Authenticated area lives under the `app/(app)/`
+  route group with a client `AuthProvider` + role-aware shell + guard. Client API layer: `app/lib/{api,types,auth-context}.ts`;
+  shared UI in `app/components/ui.tsx`.
+  - **Customer**: `/dashboard`, `/browse`, `/providers/[id]` (book), `/post-job`, `/jobs`, `/jobs/[id]` (accept bid), `/bookings` (track + review).
+  - **Provider**: `/dashboard`, `/work` (bid), `/my-bids`, `/earnings`.
+  - **Corporate/Individual**: `/dashboard`, `/hiring` (+ company KYC modal), `/hiring/new`.
+  - **Admin**: `/dashboard`, `/admin` (verification queue + disputes).
+  - Marketing Navbar shows "Go to dashboard" when a token is present.
 
 ## API routes (for the mobile app)
-All under `app/api/`, `runtime = "nodejs"`, CORS-enabled. Bearer-token auth where noted.
-- `POST auth/signup`, `POST auth/login`, `GET auth/me`
-- `GET categories`
-- `GET providers` (filters: category, q, verified, maxRate, sort), `GET providers/:id`
-- `GET/POST jobs` (auth), `GET jobs/:id`, `POST jobs/:id/bids` (provider), `POST bids/:id/accept` (customer)
-- `GET/POST bookings` (auth), `PATCH bookings/:id` (status)
-- `POST reviews` (auth), `GET notifications` (auth)
+All under `app/api/`, `runtime = "nodejs"`, CORS-enabled. Bearer-token (app JWT) auth where noted.
+- **auth**: `POST auth/otp/request`, `POST auth/otp/verify`, `POST auth/dev-login` (gated by `ALLOW_DEV_LOGIN`), `GET auth/me`
+- `GET categories`; `GET providers` (filters: category, q, verified, maxRate, sort), `GET providers/:id`
+- `GET/POST jobs`, `GET jobs/:id`, `POST jobs/:id/bids` (provider), `POST bids/:id/accept` (customer)
+- `GET/POST bookings`, `PATCH bookings/:id`; `POST reviews`; `GET notifications`, `POST notifications/read`
+- **provider**: `GET provider/{dashboard,jobs,bids,earnings,profile,reviews}`, `PATCH provider/profile`, `POST provider/boost`
+- **corporate**: `GET corporate/dashboard`, `GET/PATCH corporate/profile`, `GET/POST workforce`
+- **admin**: `GET admin/metrics`, `GET/PATCH admin/verifications`, `GET/PATCH admin/disputes`
+- **chat**: `GET/POST conversations`, `GET/POST conversations/:id/messages`
+
+Env (`.env.local`): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_ORIGIN`, `JWT_SECRET`, `ALLOW_DEV_LOGIN`, `CORS_ALLOW_ORIGIN`.
+New tables vs. earlier: `workforce_requests`, `disputes`, and `users.auth_id`/`company_*`/`verification_status` columns.
 
 ## Important Notes
 - The **mobile** app lives at `/Users/macbook/work/aurora/pocket-jobs` (Ionic React). It is the primary

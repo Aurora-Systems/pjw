@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { resolveLocalUser } from "@/lib/users";
+import { resolveLocalUser, type AccountType } from "@/lib/users";
 import { signToken, type UserRole } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return error("Not found", 404);
   }
 
-  let body: { email?: string; role?: UserRole; full_name?: string };
+  let body: { email?: string; role?: UserRole; full_name?: string; account_type?: AccountType };
   try {
     body = await req.json();
   } catch {
@@ -32,10 +32,14 @@ export async function POST(req: NextRequest) {
   const role = allowedRoles.includes(body.role as UserRole)
     ? (body.role as UserRole)
     : "customer";
+  const accountType: AccountType | undefined =
+    body.account_type === "individual" || body.account_type === "company"
+      ? body.account_type
+      : undefined;
 
   // Use a stable synthetic auth id so repeated dev logins resolve to one user.
   const authId = `dev:${email}`;
-  const user = await resolveLocalUser(authId, email, body.full_name, role);
+  const user = await resolveLocalUser(authId, email, body.full_name, role, accountType);
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
   return json({ token, user });
 }

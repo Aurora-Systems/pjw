@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Button from "./Button";
+import { getToken } from "../lib/api";
 
 const navLinks = [
   { label: "Find Work", href: "#categories" },
@@ -15,6 +16,11 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(!!getToken());
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -80,12 +86,20 @@ export default function Navbar() {
 
             {/* Desktop Auth Buttons */}
             <div className="hidden lg:flex items-center gap-3">
-              <Button variant="ghost" size="sm" href="/login" id="nav-login-btn">
-                Log In
-              </Button>
-              <Button variant="primary" size="sm" href="/signup" id="nav-signup-btn">
-                Sign Up
-              </Button>
+              {loggedIn ? (
+                <Button variant="primary" size="sm" href="/dashboard" id="nav-dashboard-btn">
+                  Go to dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" href="/login" id="nav-login-btn">
+                    Log In
+                  </Button>
+                  <Button variant="primary" size="sm" href="/signup" id="nav-signup-btn">
+                    Sign Up
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -144,24 +158,20 @@ export default function Navbar() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-pj-slate-100 flex flex-col gap-3">
-            <Button
-              variant="outline"
-              size="lg"
-              href="/login"
-              className="w-full"
-              id="mobile-login-btn"
-            >
-              Log In
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              href="/signup"
-              className="w-full"
-              id="mobile-signup-btn"
-            >
-              Sign Up
-            </Button>
+            {loggedIn ? (
+              <Button variant="primary" size="lg" href="/dashboard" className="w-full" id="mobile-dashboard-btn">
+                Go to dashboard
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" size="lg" href="/login" className="w-full" id="mobile-login-btn">
+                  Log In
+                </Button>
+                <Button variant="primary" size="lg" href="/signup" className="w-full" id="mobile-signup-btn">
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

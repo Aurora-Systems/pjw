@@ -52,11 +52,20 @@ export async function POST(req: NextRequest) {
 
   const customerId = auth.role === "provider" ? body.counterparty_id : auth.sub;
   const providerId = auth.role === "provider" ? auth.sub : body.counterparty_id;
+  const jobId = body.job_id ?? null;
+
+  // Find-or-create (NULL job_id is distinct under the unique index, so dedupe manually).
+  const existing = await sql`
+    SELECT * FROM conversations
+    WHERE customer_id = ${customerId} AND provider_id = ${providerId}
+      AND job_id IS NOT DISTINCT FROM ${jobId}
+    LIMIT 1
+  `;
+  if (existing.length > 0) return json({ conversation: existing[0] });
 
   const rows = await sql`
     INSERT INTO conversations (customer_id, provider_id, job_id)
-    VALUES (${customerId}, ${providerId}, ${body.job_id ?? null})
-    ON CONFLICT (customer_id, provider_id, job_id) DO UPDATE SET customer_id = EXCLUDED.customer_id
+    VALUES (${customerId}, ${providerId}, ${jobId})
     RETURNING *
   `;
   return json({ conversation: rows[0] }, { status: 201 });

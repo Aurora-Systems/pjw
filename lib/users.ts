@@ -1,6 +1,8 @@
 import { sql } from "@/lib/db";
 import type { UserRole } from "@/lib/auth";
 
+export type AccountType = "individual" | "company";
+
 export interface LocalUser {
   id: string;
   auth_id: string | null;
@@ -10,6 +12,7 @@ export interface LocalUser {
   role: UserRole;
   avatar_url: string | null;
   city: string | null;
+  account_type: AccountType | null;
 }
 
 /**
@@ -23,30 +26,35 @@ export async function resolveLocalUser(
   authId: string,
   email: string,
   name?: string | null,
-  role: UserRole = "customer"
+  role: UserRole = "customer",
+  accountType?: AccountType | null
 ): Promise<LocalUser> {
   const byAuth = await sql`
-    SELECT id, auth_id, email, phone, full_name, role, avatar_url, city
+    SELECT id, auth_id, email, phone, full_name, role, avatar_url, city, account_type
     FROM users WHERE auth_id = ${authId}
   `;
   if (byAuth.length > 0) return byAuth[0] as LocalUser;
 
   const byEmail = await sql`
-    SELECT id, auth_id, email, phone, full_name, role, avatar_url, city
+    SELECT id, auth_id, email, phone, full_name, role, avatar_url, city, account_type
     FROM users WHERE email = ${email}
   `;
   if (byEmail.length > 0) {
     const linked = await sql`
       UPDATE users SET auth_id = ${authId} WHERE id = ${byEmail[0].id}
-      RETURNING id, auth_id, email, phone, full_name, role, avatar_url, city
+      RETURNING id, auth_id, email, phone, full_name, role, avatar_url, city, account_type
     `;
     return linked[0] as LocalUser;
   }
 
+  // Default corporate-side accounts to 'company' unless they chose 'individual'.
+  const resolvedType =
+    role === "corporate" ? (accountType ?? "company") : null;
+
   const created = await sql`
-    INSERT INTO users (auth_id, email, full_name, role)
-    VALUES (${authId}, ${email}, ${name || email.split("@")[0]}, ${role})
-    RETURNING id, auth_id, email, phone, full_name, role, avatar_url, city
+    INSERT INTO users (auth_id, email, full_name, role, account_type)
+    VALUES (${authId}, ${email}, ${name || email.split("@")[0]}, ${role}, ${resolvedType})
+    RETURNING id, auth_id, email, phone, full_name, role, avatar_url, city, account_type
   `;
   const user = created[0] as LocalUser;
 

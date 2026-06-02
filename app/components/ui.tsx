@@ -1,0 +1,77 @@
+import React from "react";
+
+export function Card({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className={`rounded-2xl border border-pj-slate-200 bg-white p-5 ${onClick ? "cursor-pointer hover:border-pj-blue-300 hover:shadow-sm transition" : ""} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function Badge({ children, color = "blue" }: { children: React.ReactNode; color?: "blue" | "green" | "amber" | "slate" | "red" }) {
+  const map = {
+    blue: "bg-pj-blue-50 text-pj-blue-700",
+    green: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    slate: "bg-pj-slate-100 text-pj-slate-600",
+    red: "bg-red-50 text-red-600",
+  };
+  return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${map[color]}`}>{children}</span>;
+}
+
+export function Spinner({ className = "" }: { className?: string }) {
+  return (
+    <svg className={`animate-spin h-5 w-5 text-pj-blue-600 ${className}`} viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
+
+export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-end justify-between gap-4 mb-6">
+      <div>
+        <h1 className="text-2xl font-extrabold text-pj-slate-900 tracking-tight">{title}</h1>
+        {subtitle && <p className="text-pj-slate-500 mt-1">{subtitle}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+export function Stat({ value, label }: { value: React.ReactNode; label: string }) {
+  return (
+    <Card className="text-center">
+      <div className="text-2xl font-extrabold text-pj-slate-900">{value}</div>
+      <div className="text-xs text-pj-slate-500 mt-1">{label}</div>
+    </Card>
+  );
+}
+
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-semibold text-pj-slate-700 mb-2">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+export const inputClass =
+  "w-full px-4 py-3 rounded-xl border border-pj-slate-200 text-pj-slate-900 placeholder:text-pj-slate-400 focus:outline-none focus:ring-2 focus:ring-pj-blue-500 focus:border-pj-blue-500 transition";
+
+export function Loading() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <Spinner className="h-8 w-8" />
+    </div>
+  );
+}
+
+export function Empty({ children }: { children: React.ReactNode }) {
+  return <div className="text-center py-16 text-pj-slate-500">{children}</div>;
+}
