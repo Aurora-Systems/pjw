@@ -211,7 +211,7 @@ export default function Home() {
             {/* Subheadline */}
             <p className="text-lg sm:text-xl text-pj-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in text-balance">
               Connect with top freelancers worldwide. Post a job, review
-              proposals, and hire the perfect match — all from one powerful
+              proposals, and hire the perfect match, all from one powerful
               platform.
             </p>
 
@@ -362,7 +362,7 @@ export default function Home() {
       <section id="why-pocketjobs" className="py-20 lg:py-28 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left — Feature list */}
+            {/* Left: Feature list */}
             <div>
               <span className="animate-on-scroll inline-block px-4 py-1.5 rounded-full bg-pj-blue-50 text-pj-blue-600 text-sm font-semibold mb-4">
                 Why Choose Us
@@ -372,7 +372,7 @@ export default function Home() {
               </h2>
               <p className="animate-on-scroll text-lg text-pj-slate-500 mb-10 max-w-lg">
                 PocketJobs gives you all the tools to find, hire, and manage
-                world-class freelance talent — securely and efficiently.
+                world-class freelance talent, securely and efficiently.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-6">
@@ -399,7 +399,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right — Illustration / Visual */}
+            {/* Right: Illustration / Visual */}
             <div className="animate-on-scroll relative">
               <div className="relative bg-gradient-to-br from-pj-blue-600 to-pj-blue-800 rounded-3xl p-8 lg:p-12 overflow-hidden">
                 {/* Decorative circles */}
