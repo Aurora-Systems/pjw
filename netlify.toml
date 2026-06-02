@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # NEON_AUTH_ORIGIN is the public site URL (https://pocketjobs.co). It is not a
+  # secret and legitimately appears in OpenGraph metadata and project docs, so it
+  # is excluded from Netlify's secrets scanning.
+  SECRETS_SCAN_OMIT_KEYS = "NEON_AUTH_ORIGIN"
