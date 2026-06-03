@@ -196,8 +196,8 @@ export default function Home() {
             type="video/mp4"
           />
         </video>
-        {/* Light overlay keeps the existing dark text readable over the video */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/75 to-pj-blue-50/90" />
+        {/* Dark scrim keeps the video visible while text stays readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-pj-slate-900/70 via-pj-slate-900/45 to-pj-slate-900/75" />
 
         {/* Floating decorative shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -221,13 +221,13 @@ export default function Home() {
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-pj-slate-900 tracking-tight leading-[1.1] mb-6 animate-fade-in text-balance">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in text-balance">
               Find the right talent.{" "}
               <span className="gradient-text">Right in your pocket.</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg sm:text-xl text-pj-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in text-balance">
+            <p className="text-lg sm:text-xl text-white/85 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in text-balance">
               Connect with top freelancers worldwide. Post a job, review
               proposals, and hire the perfect match, all from one powerful
               platform.
@@ -272,7 +272,7 @@ export default function Home() {
 
               {/* Popular searches */}
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm">
-                <span className="text-pj-slate-400">Popular:</span>
+                <span className="text-white/70">Popular:</span>
                 {["Solar Installers", "Plumbing", "Home Cleaners", "Catering", "Carpentry", "Event Security"].map(
                   (tag) => (
                     <span
