@@ -196,8 +196,8 @@ export default function Home() {
             type="video/mp4"
           />
         </video>
-        {/* Dark scrim keeps the video visible while text stays readable */}
-        <div className="absolute inset-0 bg-gradient-to-b from-pj-slate-900/70 via-pj-slate-900/45 to-pj-slate-900/75" />
+        {/* Light scrim — mostly clear through the middle so the video shows */}
+        <div className="absolute inset-0 bg-gradient-to-b from-pj-slate-900/40 via-pj-slate-900/15 to-pj-slate-900/50" />
 
         {/* Floating decorative shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -221,13 +221,13 @@ export default function Home() {
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in text-balance">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in text-balance drop-shadow-[0_2px_14px_rgba(0,0,0,0.6)]">
               Find the right talent.{" "}
               <span className="gradient-text">Right in your pocket.</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg sm:text-xl text-white/85 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in text-balance">
+            <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in text-balance drop-shadow-[0_1px_10px_rgba(0,0,0,0.7)]">
               Connect with top freelancers worldwide. Post a job, review
               proposals, and hire the perfect match, all from one powerful
               platform.
