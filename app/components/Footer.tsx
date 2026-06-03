@@ -80,11 +80,11 @@ export default function Footer() {
           <div className="lg:w-80 flex-shrink-0">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <Image
-                src="/logo.svg"
+                src="/pocket_jobs_logo.png"
                 alt="PocketJobs Logo"
                 width={32}
                 height={32}
-                className="brightness-0 invert"
+                className="rounded-lg bg-white p-0.5"
               />
               <span className="text-xl font-bold tracking-tight">
                 Pocket<span className="text-pj-blue-400">Jobs</span>

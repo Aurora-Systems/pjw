@@ -67,7 +67,7 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-md">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-8 group">
-            <Image src="/logo.svg" alt="PocketJobs" width={40} height={40} className="transition-transform duration-300 group-hover:scale-110" />
+            <Image src="/pocket_jobs_logo.png" alt="PocketJobs" width={40} height={40} className="rounded-lg transition-transform duration-300 group-hover:scale-110" />
             <span className="text-2xl font-bold text-pj-slate-900 tracking-tight">
               Pocket<span className="text-pj-blue-600">Jobs</span>
             </span>

@@ -59,7 +59,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <Image src="/logo.svg" alt="PocketJobs" width={30} height={30} />
+              <Image src="/pocket_jobs_logo.png" alt="PocketJobs" width={30} height={30} className="rounded-md" />
               <span className="text-lg font-bold text-pj-slate-900 tracking-tight hidden sm:inline">
                 Pocket<span className="text-pj-blue-600">Jobs</span>
               </span>
