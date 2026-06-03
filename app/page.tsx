@@ -179,8 +179,26 @@ export default function Home() {
           ══════════════════════════════════════════ */}
       <section
         id="hero"
-        className="relative pt-28 pb-20 lg:pt-40 lg:pb-32 overflow-hidden gradient-hero"
+        className="relative pt-28 pb-20 lg:pt-40 lg:pb-32 overflow-hidden"
       >
+        {/* Background video */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+          poster="https://cdn.pocketjobs.co/web_assets/17773.jpg"
+        >
+          <source
+            src="https://cdn.pocketjobs.co/web_assets/286884_tiny.mp4"
+            type="video/mp4"
+          />
+        </video>
+        {/* Light overlay keeps the existing dark text readable over the video */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/75 to-pj-blue-50/90" />
+
         {/* Floating decorative shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-[10%] w-72 h-72 bg-pj-blue-200/30 rounded-full blur-3xl animate-float" />
@@ -399,62 +417,36 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right: Illustration / Visual */}
+            {/* Right: Photo collage */}
             <div className="animate-on-scroll relative">
-              <div className="relative bg-gradient-to-br from-pj-blue-600 to-pj-blue-800 rounded-3xl p-8 lg:p-12 overflow-hidden">
-                {/* Decorative circles */}
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-0 w-60 h-60 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3" />
-
-                <div className="relative space-y-6">
-                  {/* Mock dashboard card */}
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-pj-blue-400 flex items-center justify-center text-white font-bold text-sm">
-                        PJ
-                      </div>
-                      <div>
-                        <div className="text-white font-semibold text-sm">Project Dashboard</div>
-                        <div className="text-blue-200 text-xs">3 active projects</div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full w-3/4 bg-white/60 rounded-full" />
-                      </div>
-                      <div className="flex justify-between text-xs text-blue-200">
-                        <span>Progress</span>
-                        <span>75%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mini stat cards */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                      <div className="text-2xl font-bold text-white">24h</div>
-                      <div className="text-xs text-blue-200">Avg. response</div>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                      <div className="text-2xl font-bold text-white">4.9★</div>
-                      <div className="text-xs text-blue-200">Avg. rating</div>
-                    </div>
-                  </div>
-
-                  {/* Notification mock */}
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-green-400/20 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-white text-sm font-medium">New proposal received</div>
-                      <div className="text-blue-200 text-xs">Just now · React Developer</div>
-                    </div>
-                  </div>
+              {/* eslint-disable @next/next/no-img-element */}
+              <div className="grid grid-cols-2 grid-rows-2 gap-4 h-[440px] lg:h-[520px]">
+                <div className="row-span-2 relative rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+                  <img
+                    src="https://cdn.pocketjobs.co/web_assets/17773.jpg"
+                    alt="A PocketJobs service provider at work"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+                  <img
+                    src="https://cdn.pocketjobs.co/web_assets/2064.jpg"
+                    alt="A skilled tradesperson on PocketJobs"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+                  <img
+                    src="https://cdn.pocketjobs.co/web_assets/97145.jpg"
+                    alt="A freelancer collaborating through PocketJobs"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 </div>
               </div>
+              {/* eslint-enable @next/next/no-img-element */}
             </div>
           </div>
         </div>
