@@ -19,7 +19,7 @@ export async function GET(
            pp.headline, pp.bio, pp.primary_category, pp.years_experience, pp.hourly_rate,
            pp.visit_fee, pp.min_hours, pp.rating, pp.jobs_count, pp.on_time_pct,
            pp.reviews_count, pp.available, pp.is_pro, pp.is_top_rated,
-           pp.background_checked, pp.license_verified, pp.joined_at
+           pp.background_checked, pp.license_verified, pp.joined_at, pp.lat, pp.lng
     FROM users u
     JOIN provider_profiles pp ON pp.user_id = u.id
     WHERE u.id = ${id} AND u.role = 'provider'

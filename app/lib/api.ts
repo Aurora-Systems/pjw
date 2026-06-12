@@ -104,6 +104,19 @@ export const api = {
   acceptBid: (bidId: string) => request<{ booking: Booking }>(`/bids/${bidId}/accept`, { method: "POST", auth: true }),
 
   bookings: () => request<{ bookings: Booking[] }>("/bookings", { auth: true }),
+  booking: (id: string) => request<{ booking: Booking }>(`/bookings/${id}`, { auth: true }),
+
+  // payments (Pesepay)
+  initiatePayment: (booking_id: string) =>
+    request<{ redirectUrl: string; referenceNumber: string }>("/payments/initiate", {
+      method: "POST",
+      body: { booking_id },
+      auth: true,
+    }),
+  paymentStatus: (reference: string) =>
+    request<{ status: string; paid: boolean }>(`/payments/status?reference=${encodeURIComponent(reference)}`, {
+      auth: true,
+    }),
   createBooking: (body: Record<string, unknown>) =>
     request<{ booking: Booking }>("/bookings", { method: "POST", body, auth: true }),
   updateBooking: (id: string, status: BookingStatus) =>

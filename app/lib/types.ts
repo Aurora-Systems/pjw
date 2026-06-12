@@ -35,6 +35,8 @@ export interface Provider {
   distance_km: string | null;
   is_pro: boolean;
   is_top_rated: boolean;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface ProviderService {
@@ -109,6 +111,7 @@ export interface Booking {
   address: string | null;
   total: string | null;
   status: BookingStatus;
+  payment_status?: "unpaid" | "pending" | "paid" | "refunded";
   created_at: string;
   counterparty_name?: string;
 }

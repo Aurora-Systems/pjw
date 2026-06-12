@@ -18,6 +18,28 @@ const STATUSES = [
   "cancelled",
 ];
 
+/** GET /api/bookings/:id — single booking incl. live provider location (tracking). */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await getAuth(req);
+  if (!auth) return error("Unauthorized", 401);
+  const { id } = await params;
+
+  const rows = await sql`
+    SELECT b.*, cu.full_name AS customer_name, pr.full_name AS provider_name,
+           pp.lat AS provider_base_lat, pp.lng AS provider_base_lng
+    FROM bookings b
+    JOIN users cu ON cu.id = b.customer_id
+    JOIN users pr ON pr.id = b.provider_id
+    LEFT JOIN provider_profiles pp ON pp.user_id = b.provider_id
+    WHERE b.id = ${id} AND (b.customer_id = ${auth.sub} OR b.provider_id = ${auth.sub})
+  `;
+  if (rows.length === 0) return error("Booking not found", 404);
+  return json({ booking: rows[0] });
+}
+
 /** PATCH /api/bookings/:id — update booking status (tracking / completion). */
 export async function PATCH(
   req: NextRequest,

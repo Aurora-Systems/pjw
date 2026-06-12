@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     SELECT u.id, u.full_name, u.avatar_url, u.id_verified, u.city,
            pp.headline, pp.primary_category, pp.years_experience, pp.hourly_rate,
            pp.rating, pp.jobs_count, pp.reviews_count, pp.distance_km,
-           pp.available, pp.is_pro, pp.is_top_rated
+           pp.available, pp.is_pro, pp.is_top_rated, pp.lat, pp.lng
     FROM users u
     JOIN provider_profiles pp ON pp.user_id = u.id
     WHERE u.role = 'provider'
