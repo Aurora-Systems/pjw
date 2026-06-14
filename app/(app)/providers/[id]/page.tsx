@@ -13,6 +13,7 @@ export default function ProviderPage() {
   const [provider, setProvider] = useState<ProviderDetail | null>(null);
   const [services, setServices] = useState<ProviderService[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [portfolio, setPortfolio] = useState<string[]>([]);
 
   const [service, setService] = useState("");
   const [when, setWhen] = useState("");
@@ -24,10 +25,11 @@ export default function ProviderPage() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    api.provider(id).then(({ provider, services, reviews }) => {
+    api.provider(id).then(({ provider, services, reviews, portfolio }) => {
       setProvider(provider);
       setServices(services);
       setReviews(reviews);
+      setPortfolio(portfolio ?? []);
       setService(services[0]?.title || provider.primary_category || "Service");
     });
   }, [id]);
@@ -101,6 +103,17 @@ export default function ProviderPage() {
                 </div>
               ))}
             </Card>
+          </>
+        )}
+
+        {portfolio.length > 0 && (
+          <>
+            <h2 className="text-lg font-bold text-pj-slate-900 mb-2">Portfolio</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-6">
+              {portfolio.map((url, i) => (
+                <div key={i} className="aspect-square rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
+              ))}
+            </div>
           </>
         )}
 

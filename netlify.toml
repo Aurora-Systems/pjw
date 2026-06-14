@@ -3,10 +3,10 @@
   publish = ".next"
 
 [build.environment]
-  # NEON_AUTH_ORIGIN is the public site URL (https://pocketjobs.co). It is not a
-  # secret and legitimately appears in OpenGraph metadata and project docs, so it
-  # is excluded from Netlify's secrets scanning.
-  SECRETS_SCAN_OMIT_KEYS = "NEON_AUTH_ORIGIN"
+  # Public, client-embedded values (not secrets), excluded from secrets scanning:
+  #  - NEON_AUTH_ORIGIN: the public site URL (also in OpenGraph metadata)
+  #  - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: a publishable Maps JS key (restrict by referrer)
+  SECRETS_SCAN_OMIT_KEYS = "NEON_AUTH_ORIGIN,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"
 
 # Enables SSR, the App Router, and the API routes under app/api/ on Netlify.
 [[plugins]]

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Card, Badge, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
+import MapView from "../../components/MapView";
 import type { Booking, BookingStatus } from "../../lib/types";
 
 const FLOW: BookingStatus[] = ["confirmed", "on_the_way", "arrived", "in_progress", "completed"];
+const TRACKABLE = ["confirmed", "on_the_way", "arrived", "in_progress"];
 const NEXT_LABEL: Record<string, string> = {
   confirmed: "Mark on the way",
   on_the_way: "Mark arrived",
@@ -76,6 +78,21 @@ export default function BookingsPage() {
                   {b.status.replace(/_/g, " ")}
                 </Badge>
               </div>
+
+              {TRACKABLE.includes(b.status) && b.provider_lat != null && b.provider_lng != null && (
+                <div className="mt-3">
+                  <MapView
+                    height={200}
+                    center={{ lat: Number(b.provider_lat), lng: Number(b.provider_lng) }}
+                    markers={[
+                      { id: "pro", lat: Number(b.provider_lat), lng: Number(b.provider_lng), title: `${b.counterparty_name} is here` },
+                      ...(b.lat != null && b.lng != null
+                        ? [{ id: "you", lat: Number(b.lat), lng: Number(b.lng), title: "Your location" }]
+                        : []),
+                    ]}
+                  />
+                </div>
+              )}
 
               {/* progress */}
               <div className="flex items-center gap-1 mt-4">

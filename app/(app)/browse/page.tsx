@@ -2,17 +2,23 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
 import { Card, Badge, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
+import MapView, { type MapMarker } from "../../components/MapView";
 import type { Category, Provider } from "../../lib/types";
 
+const HARARE = { lat: -17.8252, lng: 31.0335 };
+
 export default function BrowsePage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [category, setCategory] = useState<string>();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState("rating");
   const [verified, setVerified] = useState(false);
+  const [view, setView] = useState<"list" | "map">("list");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,12 +56,33 @@ export default function BrowsePage() {
           <button key={c.id} onClick={() => setCategory(c.slug)} className={chip(category === c.slug)}>{c.name}</button>
         ))}
         <button onClick={() => setVerified((v) => !v)} className={chip(verified)}>Verified only</button>
+        <div className="ml-auto flex gap-2">
+          <button onClick={() => setView("list")} className={chip(view === "list")}>List</button>
+          <button onClick={() => setView("map")} className={chip(view === "map")}>Map</button>
+        </div>
       </div>
 
       {loading ? (
         <Loading />
       ) : providers.length === 0 ? (
         <Empty>No providers match your filters.</Empty>
+      ) : view === "map" ? (
+        <MapView
+          height={480}
+          center={(() => {
+            const g = providers.find((p) => p.lat != null && p.lng != null);
+            return g ? { lat: Number(g.lat), lng: Number(g.lng) } : HARARE;
+          })()}
+          markers={providers
+            .filter((p) => p.lat != null && p.lng != null)
+            .map<MapMarker>((p) => ({
+              id: p.id,
+              lat: Number(p.lat),
+              lng: Number(p.lng),
+              title: `${p.full_name} · $${p.hourly_rate ?? "-"}/hr`,
+              onClick: () => router.push(`/providers/${p.id}`),
+            }))}
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {providers.map((p) => (

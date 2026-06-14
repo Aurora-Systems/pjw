@@ -38,7 +38,10 @@ export async function PATCH(req: NextRequest) {
     bio?: string;
     hourly_rate?: number;
     primary_category?: string;
+    years_experience?: number;
     available?: boolean;
+    onboarded?: boolean;
+    city?: string;
   };
   try {
     body = await req.json();
@@ -52,9 +55,14 @@ export async function PATCH(req: NextRequest) {
       bio = COALESCE(${body.bio ?? null}, bio),
       hourly_rate = COALESCE(${body.hourly_rate ?? null}, hourly_rate),
       primary_category = COALESCE(${body.primary_category ?? null}, primary_category),
-      available = COALESCE(${body.available ?? null}, available)
+      years_experience = COALESCE(${body.years_experience ?? null}, years_experience),
+      available = COALESCE(${body.available ?? null}, available),
+      onboarded = COALESCE(${body.onboarded ?? null}, onboarded)
     WHERE user_id = ${auth.sub}
     RETURNING *
   `;
+  if (body.city) {
+    await sql`UPDATE users SET city = ${body.city} WHERE id = ${auth.sub}`;
+  }
   return json({ profile: rows[0] });
 }

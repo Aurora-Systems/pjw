@@ -11,6 +11,7 @@ export interface User {
   avatar_url: string | null;
   city: string | null;
   id_verified?: boolean;
+  provider_onboarded?: boolean;
 }
 
 export interface Category {
@@ -114,6 +115,11 @@ export interface Booking {
   payment_status?: "unpaid" | "pending" | "paid" | "refunded";
   created_at: string;
   counterparty_name?: string;
+  lat?: number | null;
+  lng?: number | null;
+  provider_lat?: number | null;
+  provider_lng?: number | null;
+  provider_location_at?: string | null;
 }
 
 export interface ProviderDashboard {

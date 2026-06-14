@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
     notes?: string;
     total?: number;
     payment_method?: string;
+    lat?: number;
+    lng?: number;
   };
   try {
     body = await req.json();
@@ -57,9 +59,10 @@ export async function POST(req: NextRequest) {
   }
 
   const rows = await sql`
-    INSERT INTO bookings (customer_id, provider_id, service, scheduled_at, address, notes, total, payment_method)
+    INSERT INTO bookings (customer_id, provider_id, service, scheduled_at, address, notes, total, payment_method, lat, lng)
     VALUES (${auth.sub}, ${body.provider_id}, ${body.service}, ${body.scheduled_at ?? null},
-            ${body.address ?? null}, ${body.notes ?? null}, ${body.total ?? null}, ${body.payment_method ?? null})
+            ${body.address ?? null}, ${body.notes ?? null}, ${body.total ?? null}, ${body.payment_method ?? null},
+            ${body.lat ?? null}, ${body.lng ?? null})
     RETURNING *
   `;
 

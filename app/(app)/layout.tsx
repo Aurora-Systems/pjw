@@ -22,6 +22,7 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/work", label: "Find work" },
     { href: "/my-bids", label: "My bids" },
     { href: "/earnings", label: "Earnings" },
+    { href: "/profile", label: "Profile" },
   ],
   corporate: [
     { href: "/dashboard", label: "Dashboard" },
@@ -40,8 +41,16 @@ function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user && !getToken()) router.replace("/login");
-  }, [loading, user, router]);
+    if (loading) return;
+    if (!user && !getToken()) {
+      router.replace("/login");
+      return;
+    }
+    // Providers must finish onboarding (trade + services) before using the app.
+    if (user?.role === "provider" && !user.provider_onboarded && pathname !== "/onboarding") {
+      router.replace("/onboarding");
+    }
+  }, [loading, user, router, pathname]);
 
   if (loading || !user) {
     return (

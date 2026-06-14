@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     FROM users u
     JOIN provider_profiles pp ON pp.user_id = u.id
     WHERE u.role = 'provider'
+      AND pp.onboarded = true
       AND ($1::text IS NULL OR pp.primary_category = $1)
       AND ($2::text IS NULL OR u.full_name ILIKE '%' || $2 || '%' OR pp.headline ILIKE '%' || $2 || '%')
       AND ($3::boolean = false OR u.id_verified = true)

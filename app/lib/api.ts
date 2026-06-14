@@ -94,7 +94,9 @@ export const api = {
     return request<{ providers: Provider[] }>(`/providers${s ? `?${s}` : ""}`);
   },
   provider: (id: string) =>
-    request<{ provider: ProviderDetail; services: ProviderService[]; reviews: Review[] }>(`/providers/${id}`),
+    request<{ provider: ProviderDetail; services: ProviderService[]; reviews: Review[]; portfolio: string[] }>(
+      `/providers/${id}`
+    ),
 
   myJobs: () => request<{ jobs: Job[] }>("/jobs", { auth: true }),
   postJob: (body: Record<string, unknown>) => request<{ job: Job }>("/jobs", { method: "POST", body, auth: true }),
@@ -105,6 +107,22 @@ export const api = {
 
   bookings: () => request<{ bookings: Booking[] }>("/bookings", { auth: true }),
   booking: (id: string) => request<{ booking: Booking }>(`/bookings/${id}`, { auth: true }),
+
+  // uploads / account / portfolio / verification
+  uploadImage: (body: { kind?: string; mime: string; data: string }) =>
+    request<{ id: string; url: string }>("/uploads", { method: "POST", body, auth: true }),
+  updateAccount: (body: { full_name?: string; avatar_url?: string; city?: string }) =>
+    request<{ user: User }>("/account", { method: "PATCH", body, auth: true }),
+  portfolio: () =>
+    request<{ portfolio: { id: string; url: string }[] }>("/provider/portfolio", { auth: true }),
+  addPortfolio: (upload_id: string) =>
+    request<{ item: { id: string; url: string } }>("/provider/portfolio", { method: "POST", body: { upload_id }, auth: true }),
+  deletePortfolio: (id: string) =>
+    request<{ ok: boolean }>(`/provider/portfolio/${id}`, { method: "DELETE", auth: true }),
+  startVerification: () =>
+    request<{ url: string; session_id: string }>("/verification/start", { method: "POST", auth: true }),
+  verificationStatus: () =>
+    request<{ verification_status: string; id_verified: boolean }>("/verification/status", { auth: true }),
 
   // payments (Pesepay)
   initiatePayment: (booking_id: string) =>
@@ -130,6 +148,17 @@ export const api = {
   providerBids: () => request<{ bids: MyBid[] }>("/provider/bids", { auth: true }),
   providerEarnings: () => request<Earnings>("/provider/earnings", { auth: true }),
   boost: (plan: string) => request<{ ok: boolean }>("/provider/boost", { method: "POST", body: { plan }, auth: true }),
+
+  providerProfile: () =>
+    request<{ profile: Record<string, unknown>; services: ProviderService[] }>("/provider/profile", { auth: true }),
+  updateProviderProfile: (body: Record<string, unknown>) =>
+    request<{ profile: Record<string, unknown> }>("/provider/profile", { method: "PATCH", body, auth: true }),
+  providerServices: () =>
+    request<{ services: ProviderService[] }>("/provider/services", { auth: true }),
+  addService: (body: { category?: string; title: string; rate: number; rate_type?: string }) =>
+    request<{ service: ProviderService }>("/provider/services", { method: "POST", body, auth: true }),
+  deleteService: (id: string) =>
+    request<{ ok: boolean }>(`/provider/services/${id}`, { method: "DELETE", auth: true }),
 
   corporateProfile: () => request<{ profile: CorporateProfile }>("/corporate/profile", { auth: true }),
   updateCorporateProfile: (body: Record<string, unknown>) =>

@@ -14,8 +14,12 @@ export async function GET(req: NextRequest) {
   if (!auth) return error("Unauthorized", 401);
 
   const rows = await sql`
-    SELECT id, phone, email, full_name, role, avatar_url, city, id_verified, phone_verified
-    FROM users WHERE id = ${auth.sub}
+    SELECT u.id, u.phone, u.email, u.full_name, u.role, u.account_type, u.avatar_url, u.city,
+           u.id_verified, u.phone_verified,
+           COALESCE(p.onboarded, false) AS provider_onboarded
+    FROM users u
+    LEFT JOIN provider_profiles p ON p.user_id = u.id
+    WHERE u.id = ${auth.sub}
   `;
   if (rows.length === 0) return error("User not found", 404);
   return json({ user: rows[0] });
