@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     rating?: number;
     comment?: string;
     tags?: string[];
+    photos?: string[];
   };
   try {
     body = await req.json();
@@ -32,11 +33,12 @@ export async function POST(req: NextRequest) {
   if (body.rating < 1 || body.rating > 5) {
     return error("rating must be between 1 and 5");
   }
+  const photos = Array.isArray(body.photos) ? body.photos.slice(0, 6) : null;
 
   const rows = await sql`
-    INSERT INTO reviews (booking_id, reviewer_id, provider_id, rating, comment, tags)
+    INSERT INTO reviews (booking_id, reviewer_id, provider_id, rating, comment, tags, photos)
     VALUES (${body.booking_id ?? null}, ${auth.sub}, ${body.provider_id}, ${body.rating},
-            ${body.comment ?? null}, ${body.tags ?? null})
+            ${body.comment ?? null}, ${body.tags ?? null}, ${photos})
     RETURNING *
   `;
 

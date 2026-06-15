@@ -40,8 +40,10 @@ export async function resolveLocalUser(
     FROM users WHERE email = ${email}
   `;
   if (byEmail.length > 0) {
+    // Link the identity only if not already linked (keeps the first provider's id;
+    // a user can sign in with OTP or Google on the same email and stay one account).
     const linked = await sql`
-      UPDATE users SET auth_id = ${authId} WHERE id = ${byEmail[0].id}
+      UPDATE users SET auth_id = COALESCE(auth_id, ${authId}) WHERE id = ${byEmail[0].id}
       RETURNING id, auth_id, email, phone, full_name, role, avatar_url, city, account_type
     `;
     return linked[0] as LocalUser;

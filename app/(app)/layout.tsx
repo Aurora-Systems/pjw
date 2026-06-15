@@ -16,11 +16,13 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/post-job", label: "Post a job" },
     { href: "/jobs", label: "My jobs" },
     { href: "/bookings", label: "Bookings" },
+    { href: "/account", label: "Account" },
   ],
   provider: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/work", label: "Find work" },
     { href: "/my-bids", label: "My bids" },
+    { href: "/schedule", label: "Schedule" },
     { href: "/earnings", label: "Earnings" },
     { href: "/profile", label: "Profile" },
   ],

@@ -53,8 +53,24 @@ export interface Review {
   rating: number;
   comment: string | null;
   tags: string[] | null;
+  photos?: string[] | null;
   created_at: string;
   reviewer_name: string;
+}
+
+export interface SavedAddress {
+  id: string;
+  label: string | null;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+}
+
+export interface ProviderBlock {
+  id: string;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
 }
 
 export interface ProviderDetail extends Provider {
@@ -78,6 +94,7 @@ export interface Job {
   status: "open" | "assigned" | "completed" | "cancelled";
   created_at: string;
   bid_count?: number;
+  photos?: string[] | null;
 }
 
 export interface Bid {

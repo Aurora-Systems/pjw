@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
-  let body: { full_name?: string; avatar_url?: string; city?: string };
+  let body: { full_name?: string; avatar_url?: string; city?: string; payout_number?: string };
   try {
     body = await req.json();
   } catch {
@@ -25,9 +25,10 @@ export async function PATCH(req: NextRequest) {
     UPDATE users SET
       full_name = COALESCE(${body.full_name ?? null}, full_name),
       avatar_url = COALESCE(${body.avatar_url ?? null}, avatar_url),
-      city = COALESCE(${body.city ?? null}, city)
+      city = COALESCE(${body.city ?? null}, city),
+      payout_number = COALESCE(${body.payout_number ?? null}, payout_number)
     WHERE id = ${auth.sub}
-    RETURNING id, full_name, email, avatar_url, city, role
+    RETURNING id, full_name, email, avatar_url, city, role, payout_number
   `;
   return json({ user: rows[0] });
 }

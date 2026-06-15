@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     budget_max?: number;
     when_text?: string;
     location?: string;
+    photos?: string[];
   };
   try {
     body = await req.json();
@@ -44,11 +45,13 @@ export async function POST(req: NextRequest) {
     return error("Invalid JSON body");
   }
   if (!body.title) return error("title is required");
+  const photos = Array.isArray(body.photos) ? body.photos.slice(0, 6) : null;
 
   const rows = await sql`
-    INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location)
+    INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location, photos)
     VALUES (${auth.sub}, ${body.title}, ${body.category ?? null}, ${body.description ?? null},
-            ${body.budget_min ?? null}, ${body.budget_max ?? null}, ${body.when_text ?? null}, ${body.location ?? null})
+            ${body.budget_min ?? null}, ${body.budget_max ?? null}, ${body.when_text ?? null}, ${body.location ?? null},
+            ${photos})
     RETURNING *
   `;
   return json({ job: rows[0] }, { status: 201 });

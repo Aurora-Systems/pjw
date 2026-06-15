@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/api";
+import { uploadFile } from "../../lib/upload";
 import { Card, Badge, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
 import MapView from "../../components/MapView";
@@ -132,12 +133,22 @@ export default function BookingsPage() {
 function ReviewModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const photoInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+
+  const onPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const { url } = await uploadFile(f, "review");
+    setPhotos((p) => [...p, url]);
+    e.target.value = "";
+  };
 
   const submit = async () => {
     setBusy(true);
     try {
-      await api.postReview({ provider_id: booking.provider_id, booking_id: booking.id, rating, comment: comment || undefined });
+      await api.postReview({ provider_id: booking.provider_id, booking_id: booking.id, rating, comment: comment || undefined, photos: photos.length ? photos : undefined });
       onClose();
     } finally {
       setBusy(false);
@@ -155,6 +166,15 @@ function ReviewModal({ booking, onClose }: { booking: Booking; onClose: () => vo
           ))}
         </div>
         <textarea value={comment} onChange={(e) => setComment(e.target.value)} className={inputClass} rows={3} placeholder="Share details of your experience…" />
+        <div className="flex flex-wrap gap-2 mt-3">
+          {photos.map((url, i) => (
+            <div key={i} className="relative w-16 h-16 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${url})` }}>
+              <button onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs">×</button>
+            </div>
+          ))}
+          <button onClick={() => photoInput.current?.click()} className="w-16 h-16 rounded-lg border border-dashed border-pj-slate-300 text-pj-slate-400 text-xl">+</button>
+          <input ref={photoInput} type="file" accept="image/*" hidden onChange={onPhoto} />
+        </div>
         <div className="flex gap-2 mt-4">
           <Button className="flex-1" disabled={busy} onClick={submit}>{busy ? "Submitting…" : "Submit review"}</Button>
           <Button variant="ghost" onClick={onClose}>Skip</Button>

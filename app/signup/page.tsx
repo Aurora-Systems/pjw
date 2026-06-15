@@ -156,6 +156,20 @@ export default function SignupPage() {
               <button type="button" onClick={devSignup} disabled={busy} className="w-full text-sm font-semibold text-pj-slate-500 hover:text-pj-blue-600 transition cursor-pointer">
                 Dev sign-up (skip OTP)
               </button>
+
+              <div className="flex items-center gap-3 my-2">
+                <div className="h-px flex-1 bg-pj-slate-100" />
+                <span className="text-xs text-pj-slate-400">or</span>
+                <div className="h-px flex-1 bg-pj-slate-100" />
+              </div>
+              <button
+                type="button"
+                onClick={() => { window.location.href = `/api/auth/google/start?role=${role}`; }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-pj-slate-200 bg-white text-pj-slate-700 font-semibold hover:bg-pj-slate-50 transition cursor-pointer"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.466 0-6.277-2.85-6.277-6.36 0-3.51 2.811-6.358 6.277-6.358 1.583 0 3.023.59 4.137 1.558l3.1-3.15C19.23 2.378 15.933 1.2 12.24 1.2 6.033 1.2 1 6.236 1 12.44s5.033 11.24 11.24 11.24c6.48 0 10.74-4.56 10.74-10.92 0-.67-.06-1.32-.172-1.956H12.24Z" /></svg>
+                Continue with Google
+              </button>
             </form>
           ) : (
             <form onSubmit={verify} className="space-y-6">

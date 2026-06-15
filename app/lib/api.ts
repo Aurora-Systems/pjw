@@ -19,6 +19,8 @@ import type {
   ProviderDetail,
   ProviderService,
   Review,
+  SavedAddress,
+  ProviderBlock,
   User,
   UserRole,
   VerificationItem,
@@ -111,8 +113,34 @@ export const api = {
   // uploads / account / portfolio / verification
   uploadImage: (body: { kind?: string; mime: string; data: string }) =>
     request<{ id: string; url: string }>("/uploads", { method: "POST", body, auth: true }),
-  updateAccount: (body: { full_name?: string; avatar_url?: string; city?: string }) =>
+  updateAccount: (body: { full_name?: string; avatar_url?: string; city?: string; payout_number?: string }) =>
     request<{ user: User }>("/account", { method: "PATCH", body, auth: true }),
+
+  // saved addresses
+  addresses: () => request<{ addresses: SavedAddress[] }>("/addresses", { auth: true }),
+  addAddress: (body: { label?: string; address: string; lat?: number; lng?: number }) =>
+    request<{ address: SavedAddress }>("/addresses", { method: "POST", body, auth: true }),
+  deleteAddress: (id: string) =>
+    request<{ ok: boolean }>(`/addresses/${id}`, { method: "DELETE", auth: true }),
+
+  // provider availability blocks
+  providerBlocks: (from?: string, to?: string) => {
+    const qs = new URLSearchParams();
+    if (from) qs.set("from", from);
+    if (to) qs.set("to", to);
+    const s = qs.toString();
+    return request<{ blocks: ProviderBlock[] }>(`/provider/blocks${s ? `?${s}` : ""}`, { auth: true });
+  },
+  addBlock: (body: { start_at: string; end_at: string; reason?: string }) =>
+    request<{ block: ProviderBlock }>("/provider/blocks", { method: "POST", body, auth: true }),
+  deleteBlock: (id: string) =>
+    request<{ ok: boolean }>(`/provider/blocks/${id}`, { method: "DELETE", auth: true }),
+
+  // public testimonials (marketing)
+  testimonials: () =>
+    request<{ testimonials: { comment: string; reviewer_first_name: string; provider_name: string; primary_category: string | null }[] }>(
+      "/testimonials"
+    ),
   portfolio: () =>
     request<{ portfolio: { id: string; url: string }[] }>("/provider/portfolio", { auth: true }),
   addPortfolio: (upload_id: string) =>

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Button from "./components/Button";
@@ -165,6 +164,58 @@ const features = [
     description: "Connect with verified tradespeople, freelancers, and laborers across Zimbabwe and Africa.",
   },
 ];
+
+/* ─── Testimonials (real 5-star reviews) ─── */
+type Testimonial = {
+  comment: string;
+  rating: number;
+  reviewer_first_name: string | null;
+  provider_name: string | null;
+  primary_category: string | null;
+};
+
+function Testimonials() {
+  const [items, setItems] = useState<Testimonial[]>([]);
+  useEffect(() => {
+    fetch("/api/testimonials")
+      .then((r) => (r.ok ? r.json() : { testimonials: [] }))
+      .then((d) => setItems(d.testimonials || []))
+      .catch(() => setItems([]));
+  }, []);
+
+  // Honest fallback: render nothing until there are real reviews to show.
+  if (items.length === 0) return null;
+
+  return (
+    <section id="testimonials" className="py-20 lg:py-28 bg-pj-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-pj-blue-50 text-pj-blue-600 text-sm font-semibold mb-4">
+            Loved by customers
+          </span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-pj-slate-900 text-balance">
+            Real reviews from real jobs
+          </h2>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {items.map((t, i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-pj-slate-100 flex flex-col">
+              <div className="text-amber-400 mb-3">{"★".repeat(t.rating)}</div>
+              <p className="text-pj-slate-600 leading-relaxed flex-1">&ldquo;{t.comment}&rdquo;</p>
+              <div className="mt-5 pt-4 border-t border-pj-slate-100">
+                <div className="font-semibold text-pj-slate-900">{t.reviewer_first_name || "A customer"}</div>
+                <div className="text-sm text-pj-slate-500">
+                  {t.provider_name ? `Hired ${t.provider_name}` : "Verified booking"}
+                  {t.primary_category ? ` · ${t.primary_category}` : ""}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /* ─── Page Component ─── */
 export default function Home() {
@@ -445,6 +496,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ══════════════════════════════════════════
+          TESTIMONIALS (real 5-star reviews)
+          ══════════════════════════════════════════ */}
+      <Testimonials />
 
       {/* ══════════════════════════════════════════
           CTA BANNER

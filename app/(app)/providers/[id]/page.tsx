@@ -127,6 +127,13 @@ export default function ProviderPage() {
                 <span className="text-amber-500 text-sm font-semibold">★ {r.rating}.0</span>
               </div>
               <p className="text-pj-slate-600 mt-1">{r.comment}</p>
+              {r.photos && r.photos.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {r.photos.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="w-16 h-16 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
+                  ))}
+                </div>
+              )}
             </Card>
           ))}
         </div>

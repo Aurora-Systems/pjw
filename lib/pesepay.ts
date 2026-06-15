@@ -30,7 +30,7 @@ export function isPesepayConfigured(): boolean {
   return Boolean(process.env.PESEPAY_INTEGRATION_KEY && process.env.PESEPAY_ENCRYPTION_KEY);
 }
 
-function encrypt(data: unknown, encryptionKey: string): string {
+export function encrypt(data: unknown, encryptionKey: string): string {
   const key = Buffer.from(encryptionKey, "utf8"); // 32 bytes -> AES-256
   const iv = Buffer.from(encryptionKey.slice(0, 16), "utf8"); // first 16 chars
   const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
@@ -40,7 +40,7 @@ function encrypt(data: unknown, encryptionKey: string): string {
   ]).toString("base64");
 }
 
-function decrypt<T = Record<string, unknown>>(payload: string, encryptionKey: string): T {
+export function decrypt<T = Record<string, unknown>>(payload: string, encryptionKey: string): T {
   const key = Buffer.from(encryptionKey, "utf8");
   const iv = Buffer.from(encryptionKey.slice(0, 16), "utf8");
   const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);

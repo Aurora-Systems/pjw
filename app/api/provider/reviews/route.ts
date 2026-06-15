@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     FROM reviews WHERE provider_id = ${auth.sub}
   `;
   const reviews = await sql`
-    SELECT r.id, r.rating, r.comment, r.tags, r.created_at, u.full_name AS reviewer_name
+    SELECT r.id, r.rating, r.comment, r.tags, r.photos, r.created_at, u.full_name AS reviewer_name
     FROM reviews r JOIN users u ON u.id = r.reviewer_id
     WHERE r.provider_id = ${auth.sub}
     ORDER BY r.created_at DESC LIMIT 50

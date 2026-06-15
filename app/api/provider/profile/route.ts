@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (auth.role !== "provider") return error("Providers only", 403);
 
   const rows = await sql`
-    SELECT u.full_name, u.email, u.city, pp.*
+    SELECT u.full_name, u.email, u.city, u.payout_number, pp.*
     FROM users u JOIN provider_profiles pp ON pp.user_id = u.id
     WHERE u.id = ${auth.sub}
   `;
