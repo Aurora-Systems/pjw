@@ -37,7 +37,7 @@ export async function GET(
     ORDER BY r.created_at DESC LIMIT 20
   `;
   const portfolio = await sql`
-    SELECT '/api/uploads/' || upload_id AS url
+    SELECT url
     FROM provider_portfolio WHERE provider_id = ${id}
     ORDER BY created_at DESC LIMIT 12
   `;

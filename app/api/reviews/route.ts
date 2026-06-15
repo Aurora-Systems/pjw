@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (body.rating < 1 || body.rating > 5) {
     return error("rating must be between 1 and 5");
   }
-  const photos = Array.isArray(body.photos) ? body.photos.slice(0, 6) : null;
+  const photos = Array.isArray(body.photos) ? body.photos.filter(isOurUploadUrl).slice(0, 6) : null;
 
   const rows = await sql`
     INSERT INTO reviews (booking_id, reviewer_id, provider_id, rating, comment, tags, photos)

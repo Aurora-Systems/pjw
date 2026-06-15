@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -15,30 +16,32 @@ export async function GET(req: NextRequest) {
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
   const items = await sql`
-    SELECT id, upload_id, '/api/uploads/' || upload_id AS url, created_at
+    SELECT id, url, created_at
     FROM provider_portfolio WHERE provider_id = ${auth.sub} ORDER BY created_at DESC
   `;
   return json({ portfolio: items });
 }
 
-/** POST /api/provider/portfolio — attach an uploaded image to the portfolio. Body: { upload_id }. */
+/** POST /api/provider/portfolio — attach an uploaded image (R2 URL) to the portfolio. Body: { url }. */
 export async function POST(req: NextRequest) {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
 
-  let body: { upload_id?: string };
+  let body: { url?: string };
   try {
     body = await req.json();
   } catch {
     return error("Invalid JSON body");
   }
-  if (!body.upload_id) return error("upload_id is required");
+  const url = body.url?.trim();
+  if (!url) return error("url is required");
+  if (!isOurUploadUrl(url)) return error("url must be an uploaded image URL");
 
   const rows = await sql`
-    INSERT INTO provider_portfolio (provider_id, upload_id)
-    VALUES (${auth.sub}, ${body.upload_id})
-    RETURNING id, upload_id, '/api/uploads/' || upload_id AS url, created_at
+    INSERT INTO provider_portfolio (provider_id, url)
+    VALUES (${auth.sub}, ${url})
+    RETURNING id, url, created_at
   `;
   return json({ item: rows[0] }, { status: 201 });
 }

@@ -2,16 +2,22 @@
 
 import { api } from "./api";
 
-/** Read a File as base64 (no data: prefix) and upload it to the API. */
-export async function uploadFile(file: File, kind: string): Promise<{ id: string; url: string }> {
-  const data = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] ?? "");
-    };
-    reader.onerror = () => reject(new Error("Could not read file"));
-    reader.readAsDataURL(file);
+const MAX_BYTES = 6 * 1024 * 1024; // 6MB — keep in sync with lib/r2.ts
+
+/**
+ * Upload an image directly to Cloudflare R2 via a short-lived presigned URL, then
+ * return its public URL (served from cdn.pocketjobs.co). The bytes never pass
+ * through our API.
+ */
+export async function uploadFile(file: File, kind: string): Promise<{ url: string }> {
+  if (file.size > MAX_BYTES) throw new Error("Image too large (max 6MB)");
+  const mime = file.type || "image/jpeg";
+  const { uploadUrl, url } = await api.signUpload({ kind, mime, size: file.size });
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": mime },
+    body: file,
   });
-  return api.uploadImage({ kind, mime: file.type || "image/jpeg", data });
+  if (!res.ok) throw new Error("Upload failed");
+  return { url };
 }

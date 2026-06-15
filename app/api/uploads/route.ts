@@ -1,7 +1,14 @@
 import type { NextRequest } from "next/server";
-import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import {
+  isR2Configured,
+  newKey,
+  presignPut,
+  publicUrl,
+  ALLOWED_IMAGE_TYPES,
+  MAX_UPLOAD_BYTES,
+} from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -9,42 +16,37 @@ export function OPTIONS() {
   return preflight();
 }
 
-const MAX_BYTES = 6 * 1024 * 1024; // 6MB
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-
 /**
- * POST /api/uploads — store an image. Body: { kind?, mime, data (base64, no data: prefix) }.
- * Returns { id, url }. The bytes live in Postgres (bytea) and are served by GET /api/uploads/:id.
+ * POST /api/uploads — mint a short-lived presigned URL for a direct-to-R2 upload.
+ * Body: { kind?, mime, size } where `size` is the exact byte length of the image.
+ * Returns { key, uploadUrl, url } — the client PUTs exactly `size` bytes to `uploadUrl`
+ * with header `Content-Type: <mime>`, then stores `url` (the public cdn.pocketjobs.co URL).
+ *
+ * `size` is validated here and signed into the URL (as Content-Length), so the upload
+ * cannot exceed MAX_UPLOAD_BYTES even if the client check is bypassed.
  */
 export async function POST(req: NextRequest) {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
+  if (!isR2Configured()) return error("Image storage is not configured", 503);
 
-  let body: { kind?: string; mime?: string; data?: string };
+  let body: { kind?: string; mime?: string; size?: number };
   try {
     body = await req.json();
   } catch {
     return error("Invalid JSON body");
   }
-  let { mime, data } = body;
-  if (!mime || !data) return error("mime and data are required");
+  const mime = body.mime;
+  if (!mime) return error("mime is required");
+  if (!ALLOWED_IMAGE_TYPES.includes(mime)) return error("Unsupported image type");
 
-  // Accept full data URLs too.
-  const m = data.match(/^data:([^;]+);base64,(.*)$/);
-  if (m) {
-    mime = m[1];
-    data = m[2];
+  const size = body.size;
+  if (typeof size !== "number" || !Number.isFinite(size) || size <= 0) {
+    return error("size (byte length) is required");
   }
-  if (!ALLOWED.includes(mime)) return error("Unsupported image type");
+  if (size > MAX_UPLOAD_BYTES) return error("Image too large (max 6MB)", 413);
 
-  const bytes = Math.ceil((data.length * 3) / 4);
-  if (bytes > MAX_BYTES) return error("Image too large (max 6MB)", 413);
-
-  const rows = await sql`
-    INSERT INTO uploads (owner_id, kind, mime, data, byte_size)
-    VALUES (${auth.sub}, ${body.kind ?? "other"}, ${mime}, decode(${data}, 'base64'), ${bytes})
-    RETURNING id
-  `;
-  const id = rows[0].id;
-  return json({ id, url: `/api/uploads/${id}` }, { status: 201 });
+  const key = newKey(body.kind ?? "other", mime);
+  const uploadUrl = await presignPut(key, mime, size);
+  return json({ key, uploadUrl, url: publicUrl(key) }, { status: 201 });
 }

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,12 @@ export async function PATCH(req: NextRequest) {
     body = await req.json();
   } catch {
     return error("Invalid JSON body");
+  }
+
+  // avatar_url, when set via this endpoint, must be one of our uploaded images.
+  // (Google OAuth sets its own avatar directly server-side, bypassing this path.)
+  if (body.avatar_url != null && !isOurUploadUrl(body.avatar_url)) {
+    return error("avatar_url must be an uploaded image URL");
   }
 
   const rows = await sql`

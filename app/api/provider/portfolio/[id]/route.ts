@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { deleteObject, keyFromPublicUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,7 @@ export function OPTIONS() {
   return preflight();
 }
 
-/** DELETE /api/provider/portfolio/:id — remove a portfolio item (and its upload). */
+/** DELETE /api/provider/portfolio/:id — remove a portfolio item (and its R2 object). */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,10 +20,12 @@ export async function DELETE(
   if (auth.role !== "provider") return error("Providers only", 403);
   const { id } = await params;
   const rows = await sql`
-    DELETE FROM provider_portfolio WHERE id = ${id} AND provider_id = ${auth.sub} RETURNING upload_id
+    DELETE FROM provider_portfolio WHERE id = ${id} AND provider_id = ${auth.sub} RETURNING url
   `;
-  if (rows[0]?.upload_id) {
-    await sql`DELETE FROM uploads WHERE id = ${rows[0].upload_id} AND owner_id = ${auth.sub}`;
+  const key = keyFromPublicUrl(rows[0]?.url as string | undefined);
+  if (key) {
+    // Best-effort: don't fail the request if the object is already gone.
+    await deleteObject(key).catch(() => undefined);
   }
   return json({ ok: true });
 }

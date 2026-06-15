@@ -56,8 +56,8 @@ export default function ProfilePage() {
   const onPortfolio = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const { id } = await uploadFile(f, "portfolio");
-    await api.addPortfolio(id);
+    const { url } = await uploadFile(f, "portfolio");
+    await api.addPortfolio(url);
     api.portfolio().then(({ portfolio }) => setPortfolio(portfolio));
   };
   const save = async () => {

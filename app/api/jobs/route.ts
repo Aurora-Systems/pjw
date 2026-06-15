@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     return error("Invalid JSON body");
   }
   if (!body.title) return error("title is required");
-  const photos = Array.isArray(body.photos) ? body.photos.slice(0, 6) : null;
+  const photos = Array.isArray(body.photos) ? body.photos.filter(isOurUploadUrl).slice(0, 6) : null;
 
   const rows = await sql`
     INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location, photos)

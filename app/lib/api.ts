@@ -111,8 +111,9 @@ export const api = {
   booking: (id: string) => request<{ booking: Booking }>(`/bookings/${id}`, { auth: true }),
 
   // uploads / account / portfolio / verification
-  uploadImage: (body: { kind?: string; mime: string; data: string }) =>
-    request<{ id: string; url: string }>("/uploads", { method: "POST", body, auth: true }),
+  // Mint a presigned URL for a direct-to-R2 upload; client PUTs bytes then stores `url`.
+  signUpload: (body: { kind?: string; mime: string; size: number }) =>
+    request<{ key: string; uploadUrl: string; url: string }>("/uploads", { method: "POST", body, auth: true }),
   updateAccount: (body: { full_name?: string; avatar_url?: string; city?: string; payout_number?: string }) =>
     request<{ user: User }>("/account", { method: "PATCH", body, auth: true }),
 
@@ -143,8 +144,8 @@ export const api = {
     ),
   portfolio: () =>
     request<{ portfolio: { id: string; url: string }[] }>("/provider/portfolio", { auth: true }),
-  addPortfolio: (upload_id: string) =>
-    request<{ item: { id: string; url: string } }>("/provider/portfolio", { method: "POST", body: { upload_id }, auth: true }),
+  addPortfolio: (url: string) =>
+    request<{ item: { id: string; url: string } }>("/provider/portfolio", { method: "POST", body: { url }, auth: true }),
   deletePortfolio: (id: string) =>
     request<{ ok: boolean }>(`/provider/portfolio/${id}`, { method: "DELETE", auth: true }),
   startVerification: () =>
