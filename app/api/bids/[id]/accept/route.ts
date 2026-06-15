@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { notify } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -42,10 +43,7 @@ export async function POST(
     RETURNING *
   `;
 
-  await sql`
-    INSERT INTO notifications (user_id, type, title, body)
-    VALUES (${bid.provider_id}, 'jobs', 'Your bid was accepted', ${"You won the job: " + bid.job_title})
-  `;
+  await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`);
 
   return json({ booking: booking[0] }, { status: 201 });
 }

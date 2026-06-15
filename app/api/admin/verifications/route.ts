@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { notify } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -44,10 +45,11 @@ export async function PATCH(req: NextRequest) {
   } else {
     await sql`UPDATE users SET verification_status = 'rejected' WHERE id = ${body.user_id}`;
   }
-  await sql`
-    INSERT INTO notifications (user_id, type, title, body)
-    VALUES (${body.user_id}, 'account', ${"Verification " + body.action + "d"},
-            ${body.action === "approve" ? "Your account is now verified." : "Please resubmit your documents."})
-  `;
+  await notify(
+    body.user_id,
+    "account",
+    `Verification ${body.action}d`,
+    body.action === "approve" ? "Your account is now verified." : "Please resubmit your documents."
+  );
   return json({ ok: true });
 }

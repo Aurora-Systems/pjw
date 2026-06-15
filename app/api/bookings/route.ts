@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { notify } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -66,10 +67,7 @@ export async function POST(req: NextRequest) {
     RETURNING *
   `;
 
-  await sql`
-    INSERT INTO notifications (user_id, type, title, body)
-    VALUES (${body.provider_id}, 'jobs', 'New booking', ${"You have a new booking: " + body.service})
-  `;
+  await notify(body.provider_id, "jobs", "New booking", `You have a new booking: ${body.service}`);
 
   return json({ booking: rows[0] }, { status: 201 });
 }
