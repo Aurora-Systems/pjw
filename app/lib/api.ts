@@ -78,11 +78,12 @@ interface AuthResponse {
 export const api = {
   requestOtp: (email: string) =>
     request<{ ok: boolean }>("/auth/otp/request", { method: "POST", body: { email } }),
-  verifyOtp: (body: { email: string; otp: string; role?: UserRole; full_name?: string; account_type?: AccountType }) =>
+  verifyOtp: (body: { email: string; otp: string; role?: UserRole; full_name?: string; account_type?: AccountType; signup?: boolean }) =>
     request<AuthResponse>("/auth/otp/verify", { method: "POST", body }),
   devLogin: (body: { email: string; role?: UserRole; full_name?: string; account_type?: AccountType }) =>
     request<AuthResponse>("/auth/dev-login", { method: "POST", body }),
   me: () => request<{ user: User }>("/auth/me", { auth: true }),
+  becomeProvider: () => request<AuthResponse>("/account/become-provider", { method: "POST", auth: true }),
 
   categories: () => request<{ categories: Category[] }>("/categories"),
   providers: (params: { category?: string; q?: string; verified?: boolean; maxRate?: number; sort?: string } = {}) => {

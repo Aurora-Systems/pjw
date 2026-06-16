@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     role?: UserRole;
     full_name?: string;
     account_type?: AccountType;
+    signup?: boolean;
   };
   try {
     body = await req.json();
@@ -31,6 +32,12 @@ export async function POST(req: NextRequest) {
   const email = body.email?.trim().toLowerCase();
   const otp = body.otp?.trim();
   if (!email || !otp) return error("email and otp are required");
+
+  // Sign-up must collect a name (proper onboarding); sign-in must not create accounts.
+  const signup = body.signup === true;
+  if (signup && !body.full_name?.trim()) {
+    return error("Please enter your name to create an account");
+  }
 
   const authUser = await verifySignInOtp(email, otp);
   if (!authUser) return error("Invalid or expired code", 401);
@@ -44,7 +51,17 @@ export async function POST(req: NextRequest) {
       ? body.account_type
       : undefined;
 
-  const user = await resolveLocalUser(authUser.id, authUser.email, body.full_name || authUser.name, role, accountType);
+  const user = await resolveLocalUser(
+    authUser.id,
+    authUser.email,
+    body.full_name || authUser.name,
+    role,
+    accountType,
+    signup // only provision a new local user on explicit sign-up
+  );
+  if (!user) {
+    return error("No account found for this email. Please create an account.", 404);
+  }
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
   return json({ token, user });
 }

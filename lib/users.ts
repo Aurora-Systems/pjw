@@ -19,7 +19,9 @@ export interface LocalUser {
  * Resolve the local `users` row for a Neon Auth identity.
  * 1. Match by auth_id (returning user).
  * 2. Else match by email and link it (e.g. a seeded provider signing in for the first time).
- * 3. Else create a new user with the requested role.
+ * 3. Else create a new user with the requested role — but ONLY when `createIfMissing`
+ *    is true (an explicit sign-up). A plain sign-in for an unknown email returns null
+ *    so the caller can reject it ("no account found, please sign up").
  * Providers also get a provider_profiles row on creation.
  */
 export async function resolveLocalUser(
@@ -27,8 +29,9 @@ export async function resolveLocalUser(
   email: string,
   name?: string | null,
   role: UserRole = "customer",
-  accountType?: AccountType | null
-): Promise<LocalUser> {
+  accountType?: AccountType | null,
+  createIfMissing: boolean = true
+): Promise<LocalUser | null> {
   const byAuth = await sql`
     SELECT id, auth_id, email, phone, full_name, role, avatar_url, city, account_type
     FROM users WHERE auth_id = ${authId}
@@ -48,6 +51,9 @@ export async function resolveLocalUser(
     `;
     return linked[0] as LocalUser;
   }
+
+  // No existing account. A sign-in must not silently provision one.
+  if (!createIfMissing) return null;
 
   // Default corporate-side accounts to 'company' unless they chose 'individual'.
   const resolvedType =

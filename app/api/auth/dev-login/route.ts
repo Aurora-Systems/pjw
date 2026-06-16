@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
 
   // Use a stable synthetic auth id so repeated dev logins resolve to one user.
   const authId = `dev:${email}`;
-  const user = await resolveLocalUser(authId, email, body.full_name, role, accountType);
+  const user = await resolveLocalUser(authId, email, body.full_name, role, accountType, true);
+  if (!user) return error("Could not create dev user", 500);
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
   return json({ token, user });
 }

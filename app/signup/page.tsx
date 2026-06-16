@@ -54,6 +54,7 @@ export default function SignupPage() {
         role,
         full_name: fullName,
         account_type: role === "corporate" ? accountType : undefined,
+        signup: true,
       });
       setToken(token);
       router.push("/dashboard");

@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
     const id = await exchangeCode(code);
     if (!id.email || !id.email_verified) return fail("email_unverified");
 
-    const user = await resolveLocalUser(`google:${id.sub}`, id.email, id.name, role);
+    const user = await resolveLocalUser(`google:${id.sub}`, id.email, id.name, role, undefined, true);
+    if (!user) return fail("google_failed");
     if (id.picture) {
       await sql`UPDATE users SET avatar_url = COALESCE(avatar_url, ${id.picture}) WHERE id = ${user.id}`;
     }
