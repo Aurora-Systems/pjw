@@ -49,20 +49,26 @@ export async function PATCH(req: NextRequest) {
     return error("Invalid JSON body");
   }
 
-  const rows = await sql`
-    UPDATE provider_profiles SET
-      headline = COALESCE(${body.headline ?? null}, headline),
-      bio = COALESCE(${body.bio ?? null}, bio),
-      hourly_rate = COALESCE(${body.hourly_rate ?? null}, hourly_rate),
-      primary_category = COALESCE(${body.primary_category ?? null}, primary_category),
-      years_experience = COALESCE(${body.years_experience ?? null}, years_experience),
-      available = COALESCE(${body.available ?? null}, available),
-      onboarded = COALESCE(${body.onboarded ?? null}, onboarded)
-    WHERE user_id = ${auth.sub}
-    RETURNING *
-  `;
-  if (body.city) {
-    await sql`UPDATE users SET city = ${body.city} WHERE id = ${auth.sub}`;
+  try {
+    const rows = await sql`
+      UPDATE provider_profiles SET
+        headline = COALESCE(${body.headline ?? null}, headline),
+        bio = COALESCE(${body.bio ?? null}, bio),
+        hourly_rate = COALESCE(${body.hourly_rate ?? null}, hourly_rate),
+        primary_category = COALESCE(${body.primary_category ?? null}, primary_category),
+        years_experience = COALESCE(${body.years_experience ?? null}, years_experience),
+        available = COALESCE(${body.available ?? null}, available),
+        onboarded = COALESCE(${body.onboarded ?? null}, onboarded)
+      WHERE user_id = ${auth.sub}
+      RETURNING *
+    `;
+    if (rows.length === 0) return error("Provider profile not found", 404);
+    if (body.city) {
+      await sql`UPDATE users SET city = ${body.city} WHERE id = ${auth.sub}`;
+    }
+    return json({ profile: rows[0] });
+  } catch (e) {
+    // Return a CORS'd JSON error so the client shows the real cause, not "network error".
+    return error(e instanceof Error ? e.message : "Could not update profile", 500);
   }
-  return json({ profile: rows[0] });
 }

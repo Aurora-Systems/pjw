@@ -37,10 +37,15 @@ export async function POST(req: NextRequest) {
     ? body.rate_type
     : "hourly";
 
-  const rows = await sql`
-    INSERT INTO provider_services (provider_id, category, title, rate, rate_type)
-    VALUES (${auth.sub}, ${body.category ?? null}, ${body.title}, ${body.rate}, ${rateType})
-    RETURNING id, category, title, rate, rate_type
-  `;
-  return json({ service: rows[0] }, { status: 201 });
+  try {
+    const rows = await sql`
+      INSERT INTO provider_services (provider_id, category, title, rate, rate_type)
+      VALUES (${auth.sub}, ${body.category ?? null}, ${body.title}, ${body.rate}, ${rateType})
+      RETURNING id, category, title, rate, rate_type
+    `;
+    return json({ service: rows[0] }, { status: 201 });
+  } catch (e) {
+    // Return a CORS'd JSON error so the client shows the real cause, not "network error".
+    return error(e instanceof Error ? e.message : "Could not add service", 500);
+  }
 }
