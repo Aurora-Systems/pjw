@@ -3,10 +3,16 @@
   publish = ".next"
 
 [build.environment]
-  # Public, client-embedded values (not secrets), excluded from secrets scanning:
+  # Public, non-secret values (identifiers / publishable keys) excluded from secrets
+  # scanning because their values legitimately appear in code, docs, or the upload URL.
+  # IMPORTANT: the real R2 secrets — R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY — are
+  # deliberately NOT listed here, so they stay scanned (they never appear in the repo/build).
   #  - NEON_AUTH_ORIGIN: the public site URL (also in OpenGraph metadata)
   #  - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: a publishable Maps JS key (restrict by referrer)
-  SECRETS_SCAN_OMIT_KEYS = "NEON_AUTH_ORIGIN,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"
+  #  - R2_BUCKET / R2_KEY_PREFIX: "pocketjobs" / "uploads" — common strings all over the code
+  #  - R2_ACCOUNT_ID: exposed in the presigned upload host (<account>.r2.cloudflarestorage.com)
+  #  - R2_PUBLIC_BASE_URL: public CDN domain, embedded in <img> src on the marketing page
+  SECRETS_SCAN_OMIT_KEYS = "NEON_AUTH_ORIGIN,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,R2_BUCKET,R2_KEY_PREFIX,R2_ACCOUNT_ID,R2_PUBLIC_BASE_URL"
 
 # Enables SSR, the App Router, and the API routes under app/api/ on Netlify.
 [[plugins]]
