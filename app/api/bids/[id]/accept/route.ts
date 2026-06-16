@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
 import { notify } from "@/lib/notify";
+import { canTakeWork, deductCommission } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,11 @@ export async function POST(
   const bid = bidRows[0];
   if (bid.customer_id !== auth.sub) return error("Not your job", 403);
 
+  // The provider takes the job here, so they need a positive balance and pay the 10% commission.
+  if (!(await canTakeWork(bid.provider_id))) {
+    return error("This provider is not currently accepting jobs. Please choose another bid.", 409);
+  }
+
   await sql`UPDATE bids SET status = 'accepted' WHERE id = ${id}`;
   await sql`UPDATE bids SET status = 'declined' WHERE job_id = ${bid.job_id} AND id <> ${id}`;
   await sql`UPDATE jobs SET status = 'assigned' WHERE id = ${bid.job_id}`;
@@ -42,6 +48,9 @@ export async function POST(
             ${bid.location ?? null}, ${bid.price}, 'confirmed')
     RETURNING *
   `;
+
+  // Take the 10% platform commission from the provider's prepaid balance.
+  await deductCommission(bid.provider_id, booking[0].id, Number(bid.price), `Commission — ${bid.job_title}`);
 
   await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`);
 

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { checkPayment, mapStatus } from "@/lib/pesepay";
+import { creditTopup } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,7 @@ export const runtime = "nodejs";
  */
 async function reconcile(reference: string | null) {
   if (!reference) return;
-  const rows = await sql`SELECT id, booking_id FROM payments WHERE reference_number = ${reference}`;
+  const rows = await sql`SELECT id, booking_id, user_id, kind, amount FROM payments WHERE reference_number = ${reference}`;
   if (rows.length === 0) return;
   const payment = rows[0];
 
@@ -23,7 +24,10 @@ async function reconcile(reference: string | null) {
     UPDATE payments SET status = ${status}, raw_status = ${tx.transactionStatus ?? null}, updated_at = now()
     WHERE id = ${payment.id}
   `;
-  if (payment.booking_id && status === "paid") {
+  if (status === "paid" && payment.kind === "topup") {
+    // Credit the provider's wallet (idempotent by reference).
+    await creditTopup(payment.user_id, Number(payment.amount), reference);
+  } else if (payment.booking_id && status === "paid") {
     await sql`UPDATE bookings SET payment_status = 'paid', paid_at = now() WHERE id = ${payment.booking_id}`;
   }
 }

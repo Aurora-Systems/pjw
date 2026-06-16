@@ -12,6 +12,8 @@ export interface User {
   city: string | null;
   id_verified?: boolean;
   provider_onboarded?: boolean;
+  client_rating?: string | null;
+  client_reviews_count?: number;
 }
 
 export interface Category {
@@ -157,6 +159,8 @@ export interface OpenJob {
   when_text: string | null;
   location: string | null;
   customer_name: string;
+  customer_rating?: string | null;
+  customer_reviews_count?: number;
   bid_count: number;
   has_my_bid: boolean;
 }
@@ -177,6 +181,25 @@ export interface Earnings {
   this_month: string;
   month_jobs: number;
   recent: { id: string; service: string; total: string | null; created_at: string; customer_name: string }[];
+}
+
+export interface WalletTxn {
+  id: string;
+  type: "topup" | "commission" | "adjustment";
+  amount: string;
+  balance_after: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface Wallet {
+  balance: number;
+  can_take_work: boolean;
+  commission_rate: number;
+  packages: number[];
+  transactions: WalletTxn[];
+  completed_jobs: number;
+  completed_value: string;
 }
 
 export interface CorporateProfile {

@@ -29,7 +29,9 @@ export async function GET(
 
   const rows = await sql`
     SELECT b.*, cu.full_name AS customer_name, pr.full_name AS provider_name,
-           pp.lat AS provider_base_lat, pp.lng AS provider_base_lng
+           pp.lat AS provider_base_lat, pp.lng AS provider_base_lng,
+           cu.client_rating AS customer_rating, cu.client_reviews_count AS customer_reviews_count,
+           pp.rating AS provider_rating, pp.reviews_count AS provider_reviews_count
     FROM bookings b
     JOIN users cu ON cu.id = b.customer_id
     JOIN users pr ON pr.id = b.provider_id

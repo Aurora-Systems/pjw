@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { canTakeWork } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,11 @@ export async function POST(
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Only providers can bid", 403);
+
+  // Providers need a positive wallet balance to take on new work.
+  if (!(await canTakeWork(auth.sub))) {
+    return error("Top up your PocketJobs balance to bid for jobs.", 402);
+  }
 
   const { id } = await params;
   let body: { price?: number; start_text?: string; message?: string; boosted?: boolean };

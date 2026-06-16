@@ -99,6 +99,11 @@ export default function AccountPage() {
         <div>
           <div className="font-bold text-pj-slate-900">{user.full_name}</div>
           <div className="text-sm text-pj-slate-500">{user.email}</div>
+          <div className="text-sm text-amber-600 font-semibold mt-0.5">
+            {user.client_rating
+              ? `★ ${Number(user.client_rating).toFixed(1)} client rating (${user.client_reviews_count ?? 0})`
+              : "No client rating yet"}
+          </div>
         </div>
       </Card>
 

@@ -21,7 +21,6 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [paying, setPaying] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState<Booking | null>(null);
 
   const load = async () => {
@@ -45,18 +44,6 @@ export default function BookingsPage() {
     }
   };
 
-  const pay = async (b: Booking) => {
-    setPaying(b.id);
-    try {
-      const { redirectUrl } = await api.initiatePayment(b.id);
-      // Remember which payment we're returning from, then hand off to Pesepay.
-      sessionStorage.setItem("pj_pay_booking", b.id);
-      window.location.href = redirectUrl;
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Could not start payment");
-      setPaying(null);
-    }
-  };
 
   if (loading) return <Loading />;
   return (
@@ -104,13 +91,7 @@ export default function BookingsPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-4">
-                {b.payment_status === "paid" ? (
-                  <Badge color="green">Paid</Badge>
-                ) : b.total ? (
-                  <Button size="sm" disabled={paying === b.id} onClick={() => pay(b)}>
-                    {paying === b.id ? "Starting…" : `Pay $${b.total}`}
-                  </Button>
-                ) : null}
+                {b.total ? <Badge color="slate">💵 Pay ${b.total} in cash</Badge> : null}
                 {NEXT_LABEL[b.status] && (
                   <Button size="sm" variant="outline" disabled={busy === b.id} onClick={() => advance(b)}>
                     {busy === b.id ? "…" : NEXT_LABEL[b.status]}

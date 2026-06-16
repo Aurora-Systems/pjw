@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, publicBaseUrl } from "@/lib/http";
 import { createSession, isDiditConfigured } from "@/lib/didit";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return error("Identity verification is not configured yet (missing Didit keys).", 503);
   }
 
-  const base = process.env.APP_PUBLIC_URL || "http://localhost:3000";
+  const base = publicBaseUrl(req);
   let session;
   try {
     session = await createSession({

@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
     SELECT j.id, j.title, j.category, j.description, j.budget_min, j.budget_max,
            j.when_text, j.location, j.created_at,
            cu.full_name AS customer_name,
+           cu.client_rating AS customer_rating,
+           cu.client_reviews_count AS customer_reviews_count,
            COUNT(b.id)::int AS bid_count,
            BOOL_OR(b.provider_id = $1) AS has_my_bid
     FROM jobs j
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
     LEFT JOIN bids b ON b.job_id = j.id
     WHERE j.status = 'open' AND j.customer_id <> $1
       AND ($2::text IS NULL OR j.category = $2)
-    GROUP BY j.id, cu.full_name
+    GROUP BY j.id, cu.full_name, cu.client_rating, cu.client_reviews_count
     ORDER BY j.created_at DESC
     LIMIT 50
   `;

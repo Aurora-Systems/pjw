@@ -11,6 +11,7 @@ import type {
   CorporateProfile,
   Dispute,
   Earnings,
+  Wallet,
   Job,
   MyBid,
   OpenJob,
@@ -177,6 +178,14 @@ export const api = {
     request<{ jobs: OpenJob[] }>(`/provider/jobs${category ? `?category=${category}` : ""}`, { auth: true }),
   providerBids: () => request<{ bids: MyBid[] }>("/provider/bids", { auth: true }),
   providerEarnings: () => request<Earnings>("/provider/earnings", { auth: true }),
+  // Provider prepaid wallet (balance + top-ups + commission ledger).
+  wallet: () => request<Wallet>("/provider/wallet", { auth: true }),
+  topup: (amount: number) =>
+    request<{ redirectUrl: string; referenceNumber: string }>("/provider/topup", {
+      method: "POST",
+      body: { amount },
+      auth: true,
+    }),
   boost: (plan: string) => request<{ ok: boolean }>("/provider/boost", { method: "POST", body: { plan }, auth: true }),
 
   providerProfile: () =>

@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
 import { checkPayment, mapStatus } from "@/lib/pesepay";
+import { creditTopup } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   if (!reference) return error("reference is required");
 
   const rows = await sql`
-    SELECT id, booking_id, status FROM payments
+    SELECT id, booking_id, status, kind, amount FROM payments
     WHERE reference_number = ${reference} AND user_id = ${auth.sub}
   `;
   if (rows.length === 0) return error("Payment not found", 404);
@@ -36,7 +37,10 @@ export async function GET(req: NextRequest) {
       UPDATE payments SET status = ${status}, raw_status = ${tx.transactionStatus ?? null}, updated_at = now()
       WHERE id = ${payment.id}
     `;
-    if (payment.booking_id) {
+    if (status === "paid" && payment.kind === "topup") {
+      // Credit the provider's wallet (idempotent by reference).
+      await creditTopup(auth.sub, Number(payment.amount), reference);
+    } else if (payment.booking_id) {
       if (status === "paid") {
         await sql`UPDATE bookings SET payment_status = 'paid', paid_at = now() WHERE id = ${payment.booking_id}`;
       } else if (status === "failed" || status === "cancelled") {

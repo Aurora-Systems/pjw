@@ -41,10 +41,10 @@ export default function PaymentReturnPage() {
 
   const content = {
     checking: { icon: <Spinner className="h-8 w-8" />, title: "Confirming your payment…", body: "Hang tight, this only takes a moment." },
-    paid: { icon: "✅", title: "Payment received", body: "Your booking is confirmed and funds are held in escrow until the job is complete." },
-    pending: { icon: "⏳", title: "Payment pending", body: "We haven't received confirmation yet. It may take a minute — check your bookings shortly." },
-    failed: { icon: "❌", title: "Payment not completed", body: "The payment was cancelled or failed. You can try again from your bookings." },
-    error: { icon: "⚠️", title: "Couldn't verify payment", body: "Open your bookings to check the latest status." },
+    paid: { icon: "✅", title: "Payment received", body: "Your wallet balance has been updated. You're all set." },
+    pending: { icon: "⏳", title: "Payment pending", body: "We haven't received confirmation yet. It may take a minute — check your wallet shortly." },
+    failed: { icon: "❌", title: "Payment not completed", body: "The payment was cancelled or failed. You can try again from your wallet." },
+    error: { icon: "⚠️", title: "Couldn't verify payment", body: "Open your wallet to check the latest status." },
   }[state];
 
   return (
@@ -54,7 +54,7 @@ export default function PaymentReturnPage() {
         <h1 className="text-xl font-extrabold text-pj-slate-900">{content.title}</h1>
         <p className="text-pj-slate-500 mt-2">{content.body}</p>
         <div className="mt-6">
-          <Button href="/bookings">Go to bookings</Button>
+          <Button href="/earnings">Go to wallet</Button>
         </div>
       </Card>
     </div>

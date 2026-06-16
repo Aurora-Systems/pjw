@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT u.id, u.phone, u.email, u.full_name, u.role, u.account_type, u.avatar_url, u.city,
-           u.id_verified, u.phone_verified,
+           u.id_verified, u.phone_verified, u.client_rating, u.client_reviews_count,
            COALESCE(p.onboarded, false) AS provider_onboarded
     FROM users u
     LEFT JOIN provider_profiles p ON p.user_id = u.id

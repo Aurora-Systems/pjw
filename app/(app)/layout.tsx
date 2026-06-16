@@ -23,7 +23,7 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/work", label: "Find work" },
     { href: "/my-bids", label: "My bids" },
     { href: "/schedule", label: "Schedule" },
-    { href: "/earnings", label: "Earnings" },
+    { href: "/earnings", label: "Wallet" },
     { href: "/profile", label: "Profile" },
   ],
   corporate: [

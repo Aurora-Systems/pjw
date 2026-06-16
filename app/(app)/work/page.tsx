@@ -53,7 +53,11 @@ export default function WorkPage() {
               <div className="font-semibold text-pj-slate-900 mt-2">{j.title}</div>
               {j.description && <p className="text-sm text-pj-slate-500 mt-1 line-clamp-2">{j.description}</p>}
               <div className="text-sm text-pj-slate-400 mt-2">
-                {[j.customer_name, j.location, `${j.bid_count} bids`].filter(Boolean).join(" · ")}
+                {[
+                  j.customer_name + (j.customer_rating ? ` ★ ${Number(j.customer_rating).toFixed(1)} (${j.customer_reviews_count ?? 0})` : " · New client"),
+                  j.location,
+                  `${j.bid_count} bids`,
+                ].filter(Boolean).join(" · ")}
               </div>
               <div className="mt-4">
                 {j.has_my_bid ? (
