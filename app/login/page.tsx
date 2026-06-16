@@ -47,20 +47,21 @@ export default function LoginPage() {
     }
   };
 
-  const devLogin = async () => {
-    setError(null);
-    if (!email.includes("@")) return setError("Enter an email for the dev shortcut.");
-    setBusy(true);
-    try {
-      const { token } = await api.devLogin({ email: email.trim().toLowerCase() });
-      setToken(token);
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Dev login failed.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  // --- Dev sign-in (skip OTP) — disabled for now ---
+  // const devLogin = async () => {
+  //   setError(null);
+  //   if (!email.includes("@")) return setError("Enter an email for the dev shortcut.");
+  //   setBusy(true);
+  //   try {
+  //     const { token } = await api.devLogin({ email: email.trim().toLowerCase() });
+  //     setToken(token);
+  //     router.push("/dashboard");
+  //   } catch (err) {
+  //     setError(err instanceof ApiError ? err.message : "Dev login failed.");
+  //   } finally {
+  //     setBusy(false);
+  //   }
+  // };
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -88,6 +89,8 @@ export default function LoginPage() {
               <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
                 {busy ? "Sending…" : "Email me a code"}
               </Button>
+              {/* Dev sign-in + Google OAuth are disabled for now. */}
+              {/*
               <button type="button" onClick={devLogin} disabled={busy} className="w-full text-sm font-semibold text-pj-slate-500 hover:text-pj-blue-600 transition cursor-pointer">
                 Dev sign-in (skip OTP)
               </button>
@@ -105,6 +108,7 @@ export default function LoginPage() {
                 <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.466 0-6.277-2.85-6.277-6.36 0-3.51 2.811-6.358 6.277-6.358 1.583 0 3.023.59 4.137 1.558l3.1-3.15C19.23 2.378 15.933 1.2 12.24 1.2 6.033 1.2 1 6.236 1 12.44s5.033 11.24 11.24 11.24c6.48 0 10.74-4.56 10.74-10.92 0-.67-.06-1.32-.172-1.956H12.24Z" /></svg>
                 Continue with Google
               </button>
+              */}
             </form>
           ) : (
             <form onSubmit={verify} className="space-y-6">
