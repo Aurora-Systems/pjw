@@ -30,9 +30,15 @@ export default function PostJobPage() {
   const onPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const { url } = await uploadFile(f, "job");
-    setPhotos((p) => [...p, url]);
-    e.target.value = "";
+    setErr(null);
+    try {
+      const { url } = await uploadFile(f, "job");
+      setPhotos((p) => [...p, url]);
+    } catch (uploadErr) {
+      setErr(uploadErr instanceof Error ? uploadErr.message : "Could not upload the photo. Please try again.");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const submit = async (e: React.FormEvent) => {

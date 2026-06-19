@@ -38,10 +38,16 @@ export default function AccountPage() {
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const { url } = await uploadFile(f, "avatar");
-    await api.updateAccount({ avatar_url: url });
-    await refresh();
-    setMsg("Photo updated.");
+    try {
+      const { url } = await uploadFile(f, "avatar");
+      await api.updateAccount({ avatar_url: url });
+      await refresh();
+      setMsg("Photo updated.");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Could not upload photo. Please try again.");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const saveProfile = async () => {

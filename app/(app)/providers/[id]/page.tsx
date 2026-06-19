@@ -19,21 +19,35 @@ export default function ProviderPage() {
   const [when, setWhen] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [payment, setPayment] = useState("card");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   useEffect(() => {
-    api.provider(id).then(({ provider, services, reviews, portfolio }) => {
-      setProvider(provider);
-      setServices(services);
-      setReviews(reviews);
-      setPortfolio(portfolio ?? []);
-      setService(services[0]?.title || provider.primary_category || "Service");
-    });
+    setLoadError(null);
+    api
+      .provider(id)
+      .then(({ provider, services, reviews, portfolio }) => {
+        setProvider(provider);
+        setServices(services);
+        setReviews(reviews);
+        setPortfolio(portfolio ?? []);
+        setService(services[0]?.title || provider.primary_category || "Service");
+      })
+      .catch((e) => setLoadError(e instanceof Error ? e.message : "Could not load this provider."));
   }, [id]);
 
+  if (loadError) {
+    return (
+      <div className="max-w-md mx-auto text-center py-16">
+        <p className="text-pj-slate-900 font-semibold mb-1">This provider isn&apos;t available</p>
+        <p className="text-pj-slate-500 text-sm mb-6">{loadError}</p>
+        <Button variant="outline" onClick={() => router.push("/browse")}>Back to browse</Button>
+      </div>
+    );
+  }
   if (!provider) return <Loading />;
 
   const book = async (e: React.FormEvent) => {
@@ -48,7 +62,7 @@ export default function ProviderPage() {
         address: address || undefined,
         notes: notes || undefined,
         total: provider.hourly_rate ? Number(provider.hourly_rate) : undefined,
-        payment_method: payment,
+        payment_method: "cash",
       });
       setMsg("Booking confirmed!");
       setTimeout(() => router.push("/bookings"), 800);
@@ -149,17 +163,10 @@ export default function ProviderPage() {
             <Field label="When"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputClass} /></Field>
             <Field label="Address"><input value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} placeholder="14 Rolf Ave, Avondale" /></Field>
             <Field label="Notes"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} rows={2} /></Field>
-            <Field label="Payment">
-              <select value={payment} onChange={(e) => setPayment(e.target.value)} className={inputClass}>
-                <option value="card">Card</option>
-                <option value="ecocash">EcoCash</option>
-                <option value="cash">Cash on completion</option>
-              </select>
-            </Field>
             {err && <p className="text-sm text-red-600">{err}</p>}
             {msg && <p className="text-sm text-emerald-600">{msg}</p>}
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "Booking…" : "Confirm booking"}</Button>
-            <p className="text-xs text-pj-slate-400 text-center">🔒 Funds held in escrow until the job is complete.</p>
+            <p className="text-xs text-pj-slate-400 text-center">💵 You pay {provider.full_name.split(" ")[0]} in cash directly when the job is done.</p>
           </form>
         </Card>
       </div>

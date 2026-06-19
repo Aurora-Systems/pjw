@@ -13,40 +13,35 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   const signature = req.headers.get("x-signature-v2") || req.headers.get("x-signature");
-  // Signature check is best-effort; authority comes from re-fetching the decision.
-  verifyWebhookSignature(raw, signature);
+  // The webhook is unauthenticated, so the signature is the ONLY proof it's from Didit.
+  // Reject anything that doesn't verify — never trust the body otherwise.
+  if (!verifyWebhookSignature(raw, signature)) {
+    return new NextResponse("invalid signature", { status: 401 });
+  }
 
-  let body: { session_id?: string; vendor_data?: string; status?: string };
+  let body: { session_id?: string };
   try {
     body = JSON.parse(raw);
   } catch {
     return new NextResponse("bad body", { status: 400 });
   }
 
+  // Act ONLY on the session_id (which we created and stored as didit_session_id) and ONLY
+  // on the authoritative decision re-fetched from Didit. We never trust a client-supplied
+  // status or vendor_data — that would let anyone forge id_verified for any user.
   const sessionId = body.session_id;
-  const userId = body.vendor_data;
-  if (!sessionId && !userId) return new NextResponse("OK", { status: 200 });
+  if (!sessionId) return new NextResponse("OK", { status: 200 });
 
-  // Re-fetch authoritative status from Didit (don't trust the payload alone).
-  let status = body.status || "";
-  let decision: unknown = null;
-  if (sessionId) {
-    const d = await getDecision(sessionId).catch(() => null);
-    if (d) {
-      status = d.status;
-      decision = d.decision;
-    }
-  }
-  if (!status) return new NextResponse("OK", { status: 200 });
+  const d = await getDecision(sessionId).catch(() => null);
+  if (!d) return new NextResponse("OK", { status: 200 });
 
-  const mapped = mapDiditStatus(status);
+  const mapped = mapDiditStatus(d.status);
   await sql`
     UPDATE users SET
       verification_status = ${mapped.verification_status},
       id_verified = ${mapped.id_verified},
-      didit_decision = ${decision ? JSON.stringify(decision) : null}::jsonb
-    WHERE (${userId}::uuid IS NOT NULL AND id = ${userId ?? null}::uuid)
-       OR (${sessionId}::text IS NOT NULL AND didit_session_id = ${sessionId ?? null})
+      didit_decision = ${d.decision ? JSON.stringify(d.decision) : null}::jsonb
+    WHERE didit_session_id = ${sessionId}
   `;
   return new NextResponse("OK", { status: 200 });
 }

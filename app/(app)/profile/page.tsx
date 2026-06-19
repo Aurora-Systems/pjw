@@ -48,17 +48,30 @@ export default function ProfilePage() {
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const { url } = await uploadFile(f, "avatar");
-    await api.updateAccount({ avatar_url: url });
-    await refresh();
-    setMsg("Photo updated.");
+    try {
+      const { url } = await uploadFile(f, "avatar");
+      await api.updateAccount({ avatar_url: url });
+      await refresh();
+      setMsg("Photo updated.");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Could not upload photo. Please try again.");
+    } finally {
+      e.target.value = "";
+    }
   };
   const onPortfolio = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const { url } = await uploadFile(f, "portfolio");
-    await api.addPortfolio(url);
-    api.portfolio().then(({ portfolio }) => setPortfolio(portfolio));
+    try {
+      const { url } = await uploadFile(f, "portfolio");
+      await api.addPortfolio(url);
+      const { portfolio } = await api.portfolio();
+      setPortfolio(portfolio);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Could not add photo. Please try again.");
+    } finally {
+      e.target.value = "";
+    }
   };
   const save = async () => {
     await api.updateProviderProfile({ headline, hourly_rate: rate ? Number(rate) : undefined, available });

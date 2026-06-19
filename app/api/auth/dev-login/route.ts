@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
   const email = body.email?.trim().toLowerCase();
   if (!email) return error("email is required");
 
-  const allowedRoles: UserRole[] = ["customer", "provider", "corporate", "admin"];
+  // Dev-login must never mint an admin session, even when ALLOW_DEV_LOGIN is on.
+  const allowedRoles: UserRole[] = ["customer", "provider", "corporate"];
   const role = allowedRoles.includes(body.role as UserRole)
     ? (body.role as UserRole)
     : "customer";

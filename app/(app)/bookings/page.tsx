@@ -117,13 +117,20 @@ function ReviewModal({ booking, onClose }: { booking: Booking; onClose: () => vo
   const [photos, setPhotos] = useState<string[]>([]);
   const photoInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [photoErr, setPhotoErr] = useState<string | null>(null);
 
   const onPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const { url } = await uploadFile(f, "review");
-    setPhotos((p) => [...p, url]);
-    e.target.value = "";
+    setPhotoErr(null);
+    try {
+      const { url } = await uploadFile(f, "review");
+      setPhotos((p) => [...p, url]);
+    } catch (err) {
+      setPhotoErr(err instanceof Error ? err.message : "Could not upload photo.");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const submit = async () => {
@@ -156,6 +163,7 @@ function ReviewModal({ booking, onClose }: { booking: Booking; onClose: () => vo
           <button onClick={() => photoInput.current?.click()} className="w-16 h-16 rounded-lg border border-dashed border-pj-slate-300 text-pj-slate-400 text-xl">+</button>
           <input ref={photoInput} type="file" accept="image/*" hidden onChange={onPhoto} />
         </div>
+        {photoErr && <p className="text-sm text-red-600 mt-2">{photoErr}</p>}
         <div className="flex gap-2 mt-4">
           <Button className="flex-1" disabled={busy} onClick={submit}>{busy ? "Submitting…" : "Submit review"}</Button>
           <Button variant="ghost" onClick={onClose}>Skip</Button>

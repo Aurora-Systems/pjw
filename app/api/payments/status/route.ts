@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
-import { checkPayment, mapStatus } from "@/lib/pesepay";
+import { checkPayment, mapStatus, confirmedUsdAmount } from "@/lib/pesepay";
 import { creditTopup } from "@/lib/wallet";
 
 export const runtime = "nodejs";
@@ -38,8 +38,15 @@ export async function GET(req: NextRequest) {
       WHERE id = ${payment.id}
     `;
     if (status === "paid" && payment.kind === "topup") {
-      // Credit the provider's wallet (idempotent by reference).
-      await creditTopup(auth.sub, Number(payment.amount), reference);
+      // Credit Pesepay's confirmed amount (idempotent by reference); flag any mismatch.
+      const paid = confirmedUsdAmount(tx);
+      if (paid != null && Math.abs(paid - Number(payment.amount)) <= 0.01) {
+        await creditTopup(auth.sub, paid, reference);
+      } else {
+        await sql`UPDATE payments SET status = 'review' WHERE id = ${payment.id}`;
+        status = "review";
+        console.error(`Topup amount mismatch ref=${reference}: confirmed=${paid} expected=${payment.amount}`);
+      }
     } else if (payment.booking_id) {
       if (status === "paid") {
         await sql`UPDATE bookings SET payment_status = 'paid', paid_at = now() WHERE id = ${payment.booking_id}`;

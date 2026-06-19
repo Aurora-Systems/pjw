@@ -48,6 +48,11 @@ function Shell({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
+    // Every signed-in non-admin must add a profile photo first — nothing else is reachable until then.
+    if (user && !user.avatar_url && user.role !== "admin") {
+      if (pathname !== "/onboarding/photo") router.replace("/onboarding/photo");
+      return;
+    }
     // Providers must finish onboarding (trade + services) before using the app.
     if (user?.role === "provider" && !user.provider_onboarded && pathname !== "/onboarding") {
       router.replace("/onboarding");

@@ -38,9 +38,15 @@ export async function POST(
     return error("This provider is not currently accepting jobs. Please choose another bid.", 409);
   }
 
+  // Atomically claim the job: only the first accept (while it's still 'open') wins. This
+  // prevents a double-accept from creating two bookings and charging commission twice.
+  const claimed = await sql`
+    UPDATE jobs SET status = 'assigned' WHERE id = ${bid.job_id} AND status = 'open' RETURNING id
+  `;
+  if (claimed.length === 0) return error("This job has already been assigned.", 409);
+
   await sql`UPDATE bids SET status = 'accepted' WHERE id = ${id}`;
   await sql`UPDATE bids SET status = 'declined' WHERE job_id = ${bid.job_id} AND id <> ${id}`;
-  await sql`UPDATE jobs SET status = 'assigned' WHERE id = ${bid.job_id}`;
 
   const booking = await sql`
     INSERT INTO bookings (customer_id, provider_id, job_id, service, address, total, status)

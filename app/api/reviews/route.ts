@@ -40,28 +40,34 @@ export async function POST(req: NextRequest) {
     return error("rating must be between 1 and 5");
   }
 
-  // Resolve who is being reviewed and in which direction.
+  // A review must be tied to a real booking you were part of, and only after it's done.
+  // (No free-form provider_id path — that let anyone rate any provider with no booking.)
+  if (!body.booking_id) return error("booking_id is required");
+  const bk = await sql`SELECT customer_id, provider_id, status FROM bookings WHERE id = ${body.booking_id}`;
+  if (bk.length === 0) return error("Booking not found", 404);
+  const b = bk[0];
+
   let subjectId: string;
   let kind: "provider" | "client";
-  if (body.booking_id) {
-    const bk = await sql`SELECT customer_id, provider_id FROM bookings WHERE id = ${body.booking_id}`;
-    if (bk.length === 0) return error("Booking not found", 404);
-    const b = bk[0];
-    if (auth.sub === b.customer_id) {
-      subjectId = b.provider_id;
-      kind = "provider";
-    } else if (auth.sub === b.provider_id) {
-      subjectId = b.customer_id;
-      kind = "client";
-    } else {
-      return error("You can only review a booking you were part of", 403);
-    }
-  } else if (body.provider_id) {
-    subjectId = body.provider_id;
+  if (auth.sub === b.customer_id) {
+    subjectId = b.provider_id;
     kind = "provider";
+  } else if (auth.sub === b.provider_id) {
+    subjectId = b.customer_id;
+    kind = "client";
   } else {
-    return error("booking_id or provider_id is required");
+    return error("You can only review a booking you were part of", 403);
   }
+
+  if (b.status !== "completed") {
+    return error("You can leave a review once the job is completed.", 409);
+  }
+
+  // One review per person per booking — prevents rating manipulation by repeat submits.
+  const dupe = await sql`
+    SELECT 1 FROM reviews WHERE booking_id = ${body.booking_id} AND reviewer_id = ${auth.sub}
+  `;
+  if (dupe.length > 0) return error("You've already reviewed this job.", 409);
 
   const photos = Array.isArray(body.photos) ? body.photos.filter(isOurUploadUrl).slice(0, 6) : null;
   const providerId = kind === "provider" ? subjectId : null;

@@ -157,3 +157,16 @@ export function mapStatus(t: PesepayTransaction): "pending" | "paid" | "failed" 
   if (["CANCELLED", "CLOSED", "CLOSED_PERIOD_ELAPSED", "TERMINATED"].includes(s)) return "cancelled";
   return "failed";
 }
+
+/**
+ * The amount Pesepay confirms was actually paid, in USD — or null if it's missing
+ * or in another currency. Use this (not the amount we requested) to credit wallets,
+ * so a gateway/amount mismatch can't be silently credited at the requested value.
+ */
+export function confirmedUsdAmount(t: PesepayTransaction): number | null {
+  const a = t.amountDetails?.amount;
+  const c = t.amountDetails?.currencyCode;
+  if (a == null || !(a > 0)) return null;
+  if (c && c !== "USD") return null;
+  return a;
+}

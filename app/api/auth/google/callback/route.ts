@@ -15,6 +15,10 @@ export const runtime = "nodejs";
  */
 export async function GET(req: NextRequest) {
   const base = process.env.APP_PUBLIC_URL || "http://localhost:3000";
+  // Disabled unless ENABLE_GOOGLE_AUTH=true — prevents OAuth from minting accounts that bypass OTP.
+  if (process.env.ENABLE_GOOGLE_AUTH !== "true") {
+    return NextResponse.redirect(`${base}/login?error=google_disabled`);
+  }
   const scheme = process.env.MOBILE_DEEPLINK_SCHEME || "co.pocketjobs.app";
   const p = req.nextUrl.searchParams;
   const code = p.get("code");

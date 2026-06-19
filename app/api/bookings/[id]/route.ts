@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight } from "@/lib/http";
+import { refundCommission } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -9,14 +10,9 @@ export function OPTIONS() {
   return preflight();
 }
 
-const STATUSES = [
-  "confirmed",
-  "on_the_way",
-  "arrived",
-  "in_progress",
-  "completed",
-  "cancelled",
-];
+// Forward progression (provider-driven); "cancelled" is handled separately.
+const FLOW = ["confirmed", "on_the_way", "arrived", "in_progress", "completed"];
+const STATUSES = [...FLOW, "cancelled"];
 
 /** GET /api/bookings/:id — single booking incl. live provider location (tracking). */
 export async function GET(
@@ -60,14 +56,40 @@ export async function PATCH(
   if (!body.status || !STATUSES.includes(body.status)) {
     return error("Valid status is required");
   }
+  const target = body.status;
 
   const rows = await sql`
     SELECT * FROM bookings WHERE id = ${id} AND (customer_id = ${auth.sub} OR provider_id = ${auth.sub})
   `;
   if (rows.length === 0) return error("Booking not found", 404);
+  const booking = rows[0];
+  const current = booking.status as string;
+  const isProvider = auth.sub === booking.provider_id;
+
+  // State machine: the job progresses forward one step at a time, driven by the PROVIDER;
+  // either party may cancel, but only before the work is underway.
+  if (target === current) return json({ booking }); // idempotent no-op
+
+  if (target === "cancelled") {
+    if (["in_progress", "completed", "cancelled"].includes(current)) {
+      return error("This booking can no longer be cancelled.", 409);
+    }
+  } else {
+    const ci = FLOW.indexOf(current);
+    const ti = FLOW.indexOf(target);
+    if (ci === -1 || ti === -1) return error("Invalid status change.", 400);
+    if (ti !== ci + 1) return error("Status must advance one step at a time.", 409);
+    if (!isProvider) return error("Only the provider can update the job's progress.", 403);
+  }
 
   const updated = await sql`
-    UPDATE bookings SET status = ${body.status} WHERE id = ${id} RETURNING *
+    UPDATE bookings SET status = ${target} WHERE id = ${id} RETURNING *
   `;
+
+  // Cancelling before work starts refunds the provider's 10% commission (the job won't happen).
+  if (target === "cancelled" && booking.provider_id) {
+    await refundCommission(booking.provider_id, id);
+  }
+
   return json({ booking: updated[0] });
 }

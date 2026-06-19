@@ -15,7 +15,7 @@ export default function SupportPage() {
     },
     {
       q: "How do payments work?",
-      a: "Our upcoming Neon DB and stripe/mobile money backend will feature protected escrow payments. Customers fund the project milestone, and funds are only disbursed once you confirm the work is completed correctly.",
+      a: "Customers pay providers directly in cash when the job is done — PocketJobs takes no cut of your job. Providers keep a small prepaid balance with us (topped up via EcoCash/card) from which a 10% platform commission is deducted each time they take a job.",
     },
   ];
 

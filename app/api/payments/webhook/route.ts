@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { checkPayment, mapStatus } from "@/lib/pesepay";
+import { checkPayment, mapStatus, confirmedUsdAmount } from "@/lib/pesepay";
 import { creditTopup } from "@/lib/wallet";
 
 export const runtime = "nodejs";
@@ -25,8 +25,15 @@ async function reconcile(reference: string | null) {
     WHERE id = ${payment.id}
   `;
   if (status === "paid" && payment.kind === "topup") {
-    // Credit the provider's wallet (idempotent by reference).
-    await creditTopup(payment.user_id, Number(payment.amount), reference);
+    // Credit the AMOUNT PESEPAY CONFIRMS (not what we requested), and only if it matches
+    // the requested amount. A mismatch is flagged for manual review, never auto-credited.
+    const paid = confirmedUsdAmount(tx);
+    if (paid != null && Math.abs(paid - Number(payment.amount)) <= 0.01) {
+      await creditTopup(payment.user_id, paid, reference); // idempotent by reference
+    } else {
+      await sql`UPDATE payments SET status = 'review' WHERE id = ${payment.id}`;
+      console.error(`Topup amount mismatch ref=${reference}: confirmed=${paid} expected=${payment.amount}`);
+    }
   } else if (payment.booking_id && status === "paid") {
     await sql`UPDATE bookings SET payment_status = 'paid', paid_at = now() WHERE id = ${payment.booking_id}`;
   }

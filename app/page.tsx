@@ -145,7 +145,7 @@ const features = [
   },
   {
     title: "Secure Payments",
-    description: "Protected escrow system ensures you only pay for work you approve.",
+    description: "Pay your provider directly in cash on completion — no platform fees on your job.",
   },
   {
     title: "24/7 Support",

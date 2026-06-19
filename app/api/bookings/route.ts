@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
     return error("provider_id and service are required");
   }
 
-  // The provider takes this job on booking, so they must have a positive balance.
+  // The provider must be a real provider with a positive balance to take this booking.
+  const prov = await sql`SELECT hourly_rate FROM provider_profiles WHERE user_id = ${body.provider_id}`;
+  if (prov.length === 0) return error("Provider not found", 404);
   if (!(await canTakeWork(body.provider_id))) {
     return error("This provider isn't accepting bookings right now. Please try another provider.", 409);
   }
@@ -79,8 +81,10 @@ export async function POST(req: NextRequest) {
     RETURNING *
   `;
 
-  // Take the 10% platform commission from the provider's prepaid balance.
-  await deductCommission(body.provider_id, rows[0].id, Number(body.total ?? 0), `Commission — ${body.service}`);
+  // Commission basis is derived server-side: the larger of the client's stated total and
+  // the provider's hourly rate, so a client can't zero out platform revenue by sending total=0.
+  const commissionBasis = Math.max(Number(body.total ?? 0), Number(prov[0].hourly_rate ?? 0));
+  await deductCommission(body.provider_id, rows[0].id, commissionBasis, `Commission — ${body.service}`);
 
   await notify(body.provider_id, "jobs", "New booking", `You have a new booking: ${body.service}`);
 
