@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import https from "node:https";
 
 /**
  * Pesepay (https://pesepay.co.zw) payment gateway client.
@@ -62,19 +63,65 @@ export interface PesepayTransaction {
   amountDetails?: { amount: number; currencyCode: string };
 }
 
+/**
+ * Pesepay's API returns slightly non-RFC-compliant HTTP responses (a missing CR in a
+ * header) that Node's built-in fetch (undici) rejects outright with "fetch failed",
+ * even though the request succeeded server-side. We use the core https client with
+ * `insecureHTTPParser` to tolerate it — the same leniency curl has.
+ */
+function httpRequest(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body?: string
+): Promise<{ status: number; text: string }> {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const req = https.request(
+      {
+        hostname: u.hostname,
+        port: u.port || 443,
+        path: u.pathname + u.search,
+        method,
+        headers,
+        insecureHTTPParser: true,
+        timeout: 20000,
+      },
+      (res) => {
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (c) => (data += c));
+        res.on("end", () => resolve({ status: res.statusCode || 0, text: data }));
+      }
+    );
+    req.on("error", reject);
+    req.on("timeout", () => req.destroy(new Error("Pesepay request timed out")));
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
 async function call(path: string, method: "GET" | "POST", body?: unknown): Promise<PesepayTransaction> {
   const { integrationKey, encryptionKey } = keys();
-  const init: RequestInit = {
-    method,
-    headers: { authorization: integrationKey, "content-type": "application/json" },
+  const headers: Record<string, string> = {
+    authorization: integrationKey,
+    "content-type": "application/json",
   };
-  if (body !== undefined) init.body = JSON.stringify({ payload: encrypt(body, encryptionKey) });
+  let payload: string | undefined;
+  if (body !== undefined) {
+    payload = JSON.stringify({ payload: encrypt(body, encryptionKey) });
+    headers["content-length"] = String(Buffer.byteLength(payload));
+  }
 
-  const res = await fetch(`${BASE_URL}${path}`, init);
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.payload) {
-    const msg = json?.message || `Pesepay request failed (${res.status})`;
-    throw new Error(msg);
+  const res = await httpRequest(`${BASE_URL}${path}`, method, headers, payload);
+  let json: { payload?: string; message?: string } | null = null;
+  try {
+    json = res.text ? JSON.parse(res.text) : null;
+  } catch {
+    json = null;
+  }
+  if (res.status < 200 || res.status >= 300 || !json?.payload) {
+    throw new Error(json?.message || `Pesepay request failed (${res.status})`);
   }
   return decrypt<PesepayTransaction>(json.payload, encryptionKey);
 }

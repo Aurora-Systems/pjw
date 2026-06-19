@@ -85,6 +85,7 @@ export const api = {
     request<AuthResponse>("/auth/dev-login", { method: "POST", body }),
   me: () => request<{ user: User }>("/auth/me", { auth: true }),
   becomeProvider: () => request<AuthResponse>("/account/become-provider", { method: "POST", auth: true }),
+  becomeCustomer: () => request<AuthResponse>("/account/become-customer", { method: "POST", auth: true }),
 
   categories: () => request<{ categories: Category[] }>("/categories"),
   providers: (params: { category?: string; q?: string; verified?: boolean; maxRate?: number; sort?: string } = {}) => {

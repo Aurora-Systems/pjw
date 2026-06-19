@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import crypto from "crypto";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight, publicBaseUrl } from "@/lib/http";
@@ -46,7 +47,8 @@ export async function POST(req: NextRequest) {
       reasonForPayment: "PocketJobs wallet top-up",
       returnUrl: `${base}/payment/return`,
       resultUrl: `${base}/api/payments/webhook`,
-      merchantReference: `topup:${auth.sub}`,
+      // Must be unique per attempt — Pesepay rejects a reused merchant reference.
+      merchantReference: `topup-${crypto.randomUUID()}`,
     });
   } catch (e) {
     return error(e instanceof Error ? e.message : "Could not start payment", 502);

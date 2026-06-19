@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ApiError } from "../../lib/api";
+import { api, ApiError, setToken } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { uploadFile } from "../../lib/upload";
 import { Card, PageHeader, Badge, Loading, Field, inputClass } from "../../components/ui";
@@ -173,6 +173,29 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+      </Card>
+
+      <Card className="mt-6">
+        <h2 className="text-lg font-bold text-pj-slate-900 mb-1">Switch account type</h2>
+        <p className="text-sm text-pj-slate-600 mb-3">
+          Need to hire instead of work? Switch to a client account. Your provider profile is kept,
+          so you can switch back anytime without redoing onboarding.
+        </p>
+        <Button
+          variant="outline"
+          onClick={async () => {
+            try {
+              const { token } = await api.becomeCustomer();
+              setToken(token);
+              await refresh();
+              router.push("/dashboard");
+            } catch (e) {
+              alert(e instanceof ApiError ? e.message : "Could not switch account.");
+            }
+          }}
+        >
+          Switch to client account
+        </Button>
       </Card>
     </div>
   );
