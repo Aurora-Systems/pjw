@@ -14,6 +14,16 @@ export const COMMISSION_RATE = 0.1; // 10%
 /** Fixed top-up packages (USD). The amount is validated server-side against this list. */
 export const TOPUP_PACKAGES = [5, 10, 20, 50];
 
+/** Fee (USD) to boost a single bid to the top of a job's responses. */
+export const BOOST_BID_FEE = 0.5;
+
+/** Profile visibility boost plans (USD), charged from the wallet. Prices match the app UI. */
+export const BOOST_PLANS: Record<string, { hours: number; pro?: boolean; price: number }> = {
+  boost: { hours: 24, price: 1.99 },
+  spotlight: { hours: 24 * 7, price: 4.99 },
+  verified_pro: { hours: 24 * 30, pro: true, price: 9.99 },
+};
+
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export async function getBalance(providerId: string): Promise<number> {
@@ -55,6 +65,33 @@ export async function deductCommission(
     VALUES (${providerId}, 'commission', ${-commission}, ${balanceAfter}, ${bookingId}, ${description})
   `;
   return balanceAfter;
+}
+
+/**
+ * Charge a one-off fee (e.g. a boost) from the provider's wallet. Unlike commission,
+ * this requires sufficient balance: the deduct only happens if `balance >= amount`,
+ * so a provider can't boost into a negative balance. Returns { ok:false } if too low.
+ */
+export async function chargeWallet(
+  providerId: string,
+  amount: number,
+  type: string,
+  description: string
+): Promise<{ ok: boolean; balance: number }> {
+  const amt = round2(amount);
+  if (!(amt > 0)) return { ok: true, balance: await getBalance(providerId) };
+  const rows = await sql`
+    UPDATE provider_profiles SET balance = balance - ${amt}
+    WHERE user_id = ${providerId} AND balance >= ${amt}
+    RETURNING balance
+  `;
+  if (rows.length === 0) return { ok: false, balance: await getBalance(providerId) };
+  const balanceAfter = Number(rows[0].balance);
+  await sql`
+    INSERT INTO wallet_transactions (provider_id, type, amount, balance_after, description)
+    VALUES (${providerId}, ${type}, ${-amt}, ${balanceAfter}, ${description})
+  `;
+  return { ok: true, balance: balanceAfter };
 }
 
 /**

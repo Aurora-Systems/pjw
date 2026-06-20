@@ -255,3 +255,21 @@ export interface Dispute {
   status: "open" | "resolved";
   created_at: string;
 }
+
+export interface Conversation {
+  id: string;
+  job_id: string | null;
+  created_at: string;
+  counterparty_name: string;
+  counterparty_id: string;
+  last_message: string | null;
+  last_at: string | null;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}

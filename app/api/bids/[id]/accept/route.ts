@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import { notify } from "@/lib/notify";
 import { canTakeWork, deductCommission } from "@/lib/wallet";
 
@@ -16,10 +16,10 @@ export function OPTIONS() {
  * Marks the bid accepted, the job assigned, declines other bids, and
  * creates a confirmed booking.
  */
-export async function POST(
+export const POST = safe(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const auth = await getAuth(_req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -61,4 +61,4 @@ export async function POST(
   await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`);
 
   return json({ booking: booking[0] }, { status: 201 });
-}
+});

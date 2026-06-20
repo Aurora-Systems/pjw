@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
-import { canTakeWork } from "@/lib/wallet";
+import { json, error, preflight, safe } from "@/lib/http";
+import { canTakeWork, chargeWallet, BOOST_BID_FEE } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -11,10 +11,10 @@ export function OPTIONS() {
 }
 
 /** POST /api/jobs/:id/bids — a provider submits a bid on a job. */
-export async function POST(
+export const POST = safe(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Only providers can bid", 403);
@@ -37,6 +37,21 @@ export async function POST(
   if (job.length === 0) return error("Job not found", 404);
   if (job[0].status !== "open") return error("This job is no longer open for bids", 409);
 
+  // Boosting a bid costs a fee from the wallet — but only the first time this bid
+  // becomes boosted (re-submitting an already-boosted bid is free).
+  const existing = await sql`SELECT boosted FROM bids WHERE job_id = ${id} AND provider_id = ${auth.sub}`;
+  const wantsBoost = body.boosted === true;
+  const alreadyBoosted = existing.length > 0 && existing[0].boosted === true;
+  if (wantsBoost && !alreadyBoosted) {
+    const charge = await chargeWallet(auth.sub, BOOST_BID_FEE, "boost", "Boosted bid");
+    if (!charge.ok) {
+      return error(
+        `Not enough wallet balance to boost this bid ($${BOOST_BID_FEE.toFixed(2)}). Submit without boost or top up.`,
+        402
+      );
+    }
+  }
+
   const rows = await sql`
     INSERT INTO bids (job_id, provider_id, price, start_text, message, boosted)
     VALUES (${id}, ${auth.sub}, ${body.price}, ${body.start_text ?? null}, ${body.message ?? null}, ${body.boosted ?? false})
@@ -46,4 +61,4 @@ export async function POST(
     RETURNING *
   `;
   return json({ bid: rows[0] }, { status: 201 });
-}
+});

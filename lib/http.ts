@@ -38,3 +38,25 @@ export function error(message: string, status = 400) {
 export function preflight() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
+
+/**
+ * Wrap a route handler so any *unhandled* throw becomes a CORS-enabled JSON 500.
+ * Without this, an unexpected error (e.g. a DB hiccup) produces Next's bare 500
+ * with no CORS headers, which the mobile client can only see as an opaque
+ * "network error". Usage: `export const GET = safe(async (req) => { ... })`.
+ */
+export function safe<A extends unknown[]>(
+  handler: (...args: A) => Promise<Response> | Response
+): (...args: A) => Promise<Response> {
+  return async (...args: A) => {
+    try {
+      return await handler(...args);
+    } catch (e) {
+      console.error("[api] unhandled error:", e);
+      return error(
+        e instanceof Error ? e.message : "Something went wrong. Please try again.",
+        500
+      );
+    }
+  };
+}

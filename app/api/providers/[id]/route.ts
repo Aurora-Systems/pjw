@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -8,10 +8,10 @@ export function OPTIONS() {
   return preflight();
 }
 
-export async function GET(
+export const GET = safe(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
 
   const rows = await sql`
@@ -44,4 +44,4 @@ export async function GET(
   `;
 
   return json({ provider: rows[0], services, reviews, portfolio: portfolio.map((p) => p.url) });
-}
+});

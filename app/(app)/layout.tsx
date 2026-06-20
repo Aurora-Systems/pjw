@@ -16,6 +16,7 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/post-job", label: "Post a job" },
     { href: "/jobs", label: "My jobs" },
     { href: "/bookings", label: "Bookings" },
+    { href: "/messages", label: "Messages" },
     { href: "/account", label: "Account" },
   ],
   provider: [
@@ -24,12 +25,15 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/my-bids", label: "My bids" },
     { href: "/schedule", label: "Schedule" },
     { href: "/earnings", label: "Wallet" },
+    { href: "/messages", label: "Messages" },
     { href: "/profile", label: "Profile" },
   ],
   corporate: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/hiring", label: "Hiring" },
     { href: "/hiring/new", label: "New request" },
+    { href: "/messages", label: "Messages" },
+    { href: "/account", label: "Account" },
   ],
   admin: [
     { href: "/dashboard", label: "Dashboard" },

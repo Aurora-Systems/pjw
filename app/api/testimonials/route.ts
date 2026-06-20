@@ -1,5 +1,5 @@
 import { sql } from "@/lib/db";
-import { json, preflight } from "@/lib/http";
+import { json, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -12,7 +12,7 @@ export function OPTIONS() {
  * Returns reviewer first name + provider name; empty array if there are none yet
  * (the landing then shows an honest non-testimonial fallback).
  */
-export async function GET() {
+export const GET = safe(async () => {
   const testimonials = await sql`
     SELECT r.comment, r.rating, r.created_at,
            split_part(cu.full_name, ' ', 1) AS reviewer_first_name,
@@ -27,4 +27,4 @@ export async function GET() {
     LIMIT 6
   `;
   return json({ testimonials });
-}
+});

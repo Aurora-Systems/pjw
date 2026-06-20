@@ -7,9 +7,11 @@ import type {
   Booking,
   BookingStatus,
   Category,
+  Conversation,
   CorporateDashboard,
   CorporateProfile,
   Dispute,
+  Message,
   Earnings,
   Wallet,
   Job,
@@ -215,4 +217,12 @@ export const api = {
   adminDisputes: () => request<{ disputes: Dispute[] }>("/admin/disputes", { auth: true }),
   resolveDispute: (id: string) =>
     request<{ dispute: Dispute }>("/admin/disputes", { method: "PATCH", body: { id, status: "resolved" }, auth: true }),
+
+  conversations: () => request<{ conversations: Conversation[] }>("/conversations", { auth: true }),
+  startConversation: (counterparty_id: string, job_id?: string) =>
+    request<{ conversation: Conversation }>("/conversations", { method: "POST", body: { counterparty_id, job_id }, auth: true }),
+  messages: (conversationId: string) =>
+    request<{ messages: Message[] }>(`/conversations/${conversationId}/messages`, { auth: true }),
+  sendMessage: (conversationId: string, body: string) =>
+    request<{ message: Message }>(`/conversations/${conversationId}/messages`, { method: "POST", body: { body }, auth: true }),
 };

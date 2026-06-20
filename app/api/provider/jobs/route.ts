@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ export function OPTIONS() {
  * Excludes the provider's own jobs; flags jobs they've already bid on.
  * Optional ?category= filter.
  */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
@@ -40,4 +40,4 @@ export async function GET(req: NextRequest) {
   `;
   const jobs = await sql.query(text, [auth.sub, category]);
   return json({ jobs });
-}
+});

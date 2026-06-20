@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import { getBalance, TOPUP_PACKAGES, COMMISSION_RATE } from "@/lib/wallet";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export function OPTIONS() {
  * rate, and recent wallet transactions (top-ups + commissions). Replaces the old
  * earnings/payout view (there are no payouts in this model).
  */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
@@ -44,4 +44,4 @@ export async function GET(req: NextRequest) {
     completed_jobs: stats[0].completed_jobs,
     completed_value: stats[0].completed_value,
   });
-}
+});

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth, signToken } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,7 @@ export function OPTIONS() {
  * later doesn't require re-onboarding. Returns a FRESH token carrying the new role —
  * the client must replace its stored token with it.
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -39,4 +39,4 @@ export async function POST(req: NextRequest) {
   const user = rows[0];
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
   return json({ token, user });
-}
+});

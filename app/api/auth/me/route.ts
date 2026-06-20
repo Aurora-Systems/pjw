@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -9,7 +9,7 @@ export function OPTIONS() {
   return preflight();
 }
 
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -23,4 +23,4 @@ export async function GET(req: NextRequest) {
   `;
   if (rows.length === 0) return error("User not found", 404);
   return json({ user: rows[0] });
-}
+});

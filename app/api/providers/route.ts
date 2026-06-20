@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
-import { json, preflight } from "@/lib/http";
+import { json, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,7 @@ export function OPTIONS() {
  *   maxRate   — only providers at/under this hourly rate
  *   sort       — "distance" (default) | "rating" | "price"
  */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const p = req.nextUrl.searchParams;
   const category = p.get("category");
   const q = p.get("q");
@@ -52,4 +52,4 @@ export async function GET(req: NextRequest) {
   `;
   const providers = await sql.query(text, [category, q, verified, maxRate]);
   return json({ providers });
-}
+});
