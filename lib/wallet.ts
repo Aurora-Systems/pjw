@@ -33,10 +33,9 @@ export async function getBalance(providerId: string): Promise<number> {
 }
 
 /**
- * True if the provider can take new work: strictly positive balance, and — when
- * REQUIRE_PROVIDER_VERIFICATION=true — an ID-verified account (since jobs are in-person,
- * cash, in people's homes). Defaults to balance-only so the live marketplace isn't frozen
- * until the operator turns verification gating on.
+ * True if the provider can take new work. Because jobs are in-person, cash, and often in
+ * people's homes, a provider must (1) be ID-verified and (2) have a strictly positive
+ * wallet balance. Verification is always required — it is not an operator toggle.
  */
 export async function canTakeWork(providerId: string): Promise<boolean> {
   const rows = await sql`
@@ -45,8 +44,8 @@ export async function canTakeWork(providerId: string): Promise<boolean> {
     WHERE pp.user_id = ${providerId}
   `;
   if (rows.length === 0) return false;
+  if (!rows[0].id_verified) return false;
   if (Number(rows[0].balance) <= 0) return false;
-  if (process.env.REQUIRE_PROVIDER_VERIFICATION === "true" && !rows[0].id_verified) return false;
   return true;
 }
 

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
-import { canTakeWork, chargeWallet, BOOST_BID_FEE } from "@/lib/wallet";
+import { chargeWallet, BOOST_BID_FEE } from "@/lib/wallet";
 import { notify } from "@/lib/notify";
 
 export const runtime = "nodejs";
@@ -20,10 +20,16 @@ export const POST = safe(async (
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Only providers can bid", 403);
 
-  // Providers need a positive wallet balance to take on new work.
-  if (!(await canTakeWork(auth.sub))) {
-    return error("Top up your PocketJobs balance to bid for jobs.", 402);
-  }
+  // Providers must be ID-verified (in-person cash jobs) AND have a positive balance.
+  // Checked explicitly here so the provider gets the right reason to act on.
+  const elig = await sql`
+    SELECT pp.balance, u.id_verified
+    FROM provider_profiles pp JOIN users u ON u.id = pp.user_id
+    WHERE pp.user_id = ${auth.sub}
+  `;
+  if (elig.length === 0) return error("Finish setting up your provider profile first.", 403);
+  if (!elig[0].id_verified) return error("Verify your identity before bidding for jobs.", 403);
+  if (Number(elig[0].balance) <= 0) return error("Top up your PocketJobs balance to bid for jobs.", 402);
 
   const { id } = await params;
   let body: { price?: number; start_text?: string; message?: string; boosted?: boolean };
