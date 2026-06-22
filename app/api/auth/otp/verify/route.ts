@@ -2,7 +2,9 @@ import type { NextRequest } from "next/server";
 import { verifySignInOtp } from "@/lib/neonauth";
 import { resolveLocalUser, type AccountType } from "@/lib/users";
 import { signToken, type UserRole } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { track } from "@/lib/analytics";
 
 export const runtime = "nodejs";
 
@@ -14,7 +16,7 @@ export function OPTIONS() {
  * POST /api/auth/otp/verify — verify the OTP with Neon Auth, map to a local
  * user (creating with the chosen role on first sign-in), and return our app JWT.
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   let body: {
     email?: string;
     otp?: string;
@@ -38,6 +40,10 @@ export async function POST(req: NextRequest) {
   if (signup && !body.full_name?.trim()) {
     return error("Please enter your name to create an account");
   }
+
+  // Throttle verification attempts to stop 6-digit brute force: per-IP and per-email.
+  await rateLimit(`otp-vrf:ip:${clientIp(req)}`, 30, 600);
+  await rateLimit(`otp-vrf:email:${email}`, 10, 600);
 
   const authUser = await verifySignInOtp(email, otp);
   if (!authUser) return error("Invalid or expired code", 401);
@@ -63,5 +69,6 @@ export async function POST(req: NextRequest) {
     return error("No account found for this email. Please create an account.", 404);
   }
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
+  track(user.id, signup ? "signup_completed" : "login", { role: user.role });
   return json({ token, user });
-}
+});

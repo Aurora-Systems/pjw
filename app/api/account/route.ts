@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
@@ -11,7 +11,7 @@ export function OPTIONS() {
 }
 
 /** PATCH /api/account — update the signed-in user's name / avatar / city. */
-export async function PATCH(req: NextRequest) {
+export const PATCH = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -38,4 +38,4 @@ export async function PATCH(req: NextRequest) {
     RETURNING id, full_name, email, avatar_url, city, role, payout_number
   `;
   return json({ user: rows[0] });
-}
+});

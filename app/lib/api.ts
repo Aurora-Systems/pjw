@@ -221,8 +221,11 @@ export const api = {
   conversations: () => request<{ conversations: Conversation[] }>("/conversations", { auth: true }),
   startConversation: (counterparty_id: string, job_id?: string) =>
     request<{ conversation: Conversation }>("/conversations", { method: "POST", body: { counterparty_id, job_id }, auth: true }),
-  messages: (conversationId: string) =>
-    request<{ messages: Message[] }>(`/conversations/${conversationId}/messages`, { auth: true }),
+  messages: (conversationId: string, after?: string) =>
+    request<{ messages: Message[] }>(
+      `/conversations/${conversationId}/messages${after ? `?after=${encodeURIComponent(after)}` : ""}`,
+      { auth: true }
+    ),
   sendMessage: (conversationId: string, body: string) =>
     request<{ message: Message }>(`/conversations/${conversationId}/messages`, { method: "POST", body: { body }, auth: true }),
 };

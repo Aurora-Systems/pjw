@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import { notify } from "@/lib/notify";
 import { canTakeWork, deductCommission } from "@/lib/wallet";
 
@@ -15,7 +15,7 @@ export function OPTIONS() {
  * GET /api/bookings — bookings for the signed-in user.
  * Customers see bookings they made; providers see bookings assigned to them.
  */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -25,6 +25,10 @@ export async function GET(req: NextRequest) {
   const otherRating = auth.role === "provider" ? "cu.client_rating" : "pp.rating";
   const otherRatingCount =
     auth.role === "provider" ? "cu.client_reviews_count" : "pp.reviews_count";
+
+  const p = req.nextUrl.searchParams;
+  const limit = Math.min(Math.max(Number(p.get("limit")) || 100, 1), 200);
+  const offset = Math.max(Number(p.get("offset")) || 0, 0);
 
   const text = `
     SELECT b.*, ${otherName} AS counterparty_name,
@@ -36,13 +40,14 @@ export async function GET(req: NextRequest) {
     LEFT JOIN provider_profiles pp ON pp.user_id = b.provider_id
     WHERE b.${column} = $1
     ORDER BY b.created_at DESC
+    LIMIT $2 OFFSET $3
   `;
-  const bookings = await sql.query(text, [auth.sub]);
+  const bookings = await sql.query(text, [auth.sub, limit, offset]);
   return json({ bookings });
-}
+});
 
 /** POST /api/bookings — direct booking of a provider (no open-bid flow). */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -56,6 +61,7 @@ export async function POST(req: NextRequest) {
     payment_method?: string;
     lat?: number;
     lng?: number;
+    idempotency_key?: string;
   };
   try {
     body = await req.json();
@@ -66,6 +72,14 @@ export async function POST(req: NextRequest) {
     return error("provider_id and service are required");
   }
 
+  // Retry safety: if the client resends the same idempotency_key, return the existing booking
+  // instead of creating a second one (and double-charging commission).
+  const idemKey = body.idempotency_key || req.headers.get("idempotency-key") || null;
+  if (idemKey) {
+    const existing = await sql`SELECT * FROM bookings WHERE idempotency_key = ${idemKey} AND customer_id = ${auth.sub}`;
+    if (existing.length > 0) return json({ booking: existing[0] }, { status: 200 });
+  }
+
   // The provider must be a real provider with a positive balance to take this booking.
   const prov = await sql`SELECT hourly_rate FROM provider_profiles WHERE user_id = ${body.provider_id}`;
   if (prov.length === 0) return error("Provider not found", 404);
@@ -74,12 +88,19 @@ export async function POST(req: NextRequest) {
   }
 
   const rows = await sql`
-    INSERT INTO bookings (customer_id, provider_id, service, scheduled_at, address, notes, total, payment_method, lat, lng)
+    INSERT INTO bookings (customer_id, provider_id, service, scheduled_at, address, notes, total, payment_method, lat, lng, idempotency_key)
     VALUES (${auth.sub}, ${body.provider_id}, ${body.service}, ${body.scheduled_at ?? null},
             ${body.address ?? null}, ${body.notes ?? null}, ${body.total ?? null}, ${body.payment_method ?? null},
-            ${body.lat ?? null}, ${body.lng ?? null})
+            ${body.lat ?? null}, ${body.lng ?? null}, ${idemKey})
+    ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
     RETURNING *
   `;
+  // If the insert hit the idempotency conflict, fetch and return the winning row (no re-charge).
+  if (rows.length === 0) {
+    const winner = await sql`SELECT * FROM bookings WHERE idempotency_key = ${idemKey}`;
+    if (winner.length > 0) return json({ booking: winner[0] }, { status: 200 });
+    return error("Could not create booking", 500);
+  }
 
   // Commission basis is derived server-side: the larger of the client's stated total and
   // the provider's hourly rate, so a client can't zero out platform revenue by sending total=0.
@@ -89,4 +110,4 @@ export async function POST(req: NextRequest) {
   await notify(body.provider_id, "jobs", "New booking", `You have a new booking: ${body.service}`);
 
   return json({ booking: rows[0] }, { status: 201 });
-}
+});

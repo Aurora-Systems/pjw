@@ -23,6 +23,12 @@ export default function BrowsePage() {
 
   useEffect(() => {
     api.categories().then((c) => setCategories(c.categories));
+    // Seed the search from the homepage hero (?q= / ?category=).
+    const sp = new URLSearchParams(window.location.search);
+    const seedQ = sp.get("q");
+    const seedCat = sp.get("category");
+    if (seedQ) setQ(seedQ);
+    if (seedCat) setCategory(seedCat);
   }, []);
 
   const load = useCallback(async () => {

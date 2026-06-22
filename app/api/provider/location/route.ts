@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,7 @@ export function OPTIONS() {
  * updates that active job's live location for the customer's tracking map.
  * Body: { lat, lng, booking_id? }
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
@@ -40,4 +40,4 @@ export async function POST(req: NextRequest) {
     `;
   }
   return json({ ok: true });
-}
+});

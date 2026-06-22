@@ -1,8 +1,17 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import { refundCommission } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
+
+const STATUS_LABEL: Record<string, string> = {
+  on_the_way: "Your provider is on the way",
+  arrived: "Your provider has arrived",
+  in_progress: "Work has started",
+  completed: "Job marked complete",
+  cancelled: "Booking cancelled",
+};
 
 export const runtime = "nodejs";
 
@@ -15,10 +24,10 @@ const FLOW = ["confirmed", "on_the_way", "arrived", "in_progress", "completed"];
 const STATUSES = [...FLOW, "cancelled"];
 
 /** GET /api/bookings/:id — single booking incl. live provider location (tracking). */
-export async function GET(
+export const GET = safe(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   const { id } = await params;
@@ -36,18 +45,18 @@ export async function GET(
   `;
   if (rows.length === 0) return error("Booking not found", 404);
   return json({ booking: rows[0] });
-}
+});
 
 /** PATCH /api/bookings/:id — update booking status (tracking / completion). */
-export async function PATCH(
+export const PATCH = safe(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
   const { id } = await params;
-  let body: { status?: string };
+  let body: { status?: string; cancel_reason?: string; no_show?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -82,14 +91,47 @@ export async function PATCH(
     if (!isProvider) return error("Only the provider can update the job's progress.", 403);
   }
 
+  // Conditional on the status we validated against — closes the TOCTOU window where a
+  // concurrent PATCH already moved the booking on (lost-update on the state machine).
   const updated = await sql`
-    UPDATE bookings SET status = ${target} WHERE id = ${id} RETURNING *
+    UPDATE bookings SET
+      status = ${target},
+      started_at   = CASE WHEN ${target} = 'in_progress' THEN COALESCE(started_at, now()) ELSE started_at END,
+      completed_at = CASE WHEN ${target} = 'completed'   THEN now() ELSE completed_at END,
+      cancelled_at = CASE WHEN ${target} = 'cancelled'   THEN now() ELSE cancelled_at END,
+      cancelled_by = CASE WHEN ${target} = 'cancelled'   THEN ${auth.sub}::uuid ELSE cancelled_by END,
+      cancel_reason= CASE WHEN ${target} = 'cancelled'   THEN ${body.cancel_reason ?? null} ELSE cancel_reason END,
+      no_show      = CASE WHEN ${target} = 'cancelled'   THEN ${body.no_show ?? false} ELSE no_show END
+    WHERE id = ${id} AND status = ${current}
+    RETURNING *
   `;
+  if (updated.length === 0) {
+    return error("This booking was just updated elsewhere. Refresh and try again.", 409);
+  }
+
+  // Append to the booking audit trail (best-effort — never fail the status change).
+  try {
+    await sql`
+      INSERT INTO booking_events (booking_id, actor_id, from_status, to_status, note)
+      VALUES (${id}, ${auth.sub}, ${current}, ${target}, ${body.cancel_reason ?? null})
+    `;
+  } catch (e) {
+    console.error("[booking_events] insert failed:", e);
+  }
 
   // Cancelling before work starts refunds the provider's 10% commission (the job won't happen).
   if (target === "cancelled" && booking.provider_id) {
     await refundCommission(booking.provider_id, id);
   }
 
+  // Notify the counterparty of the status change.
+  const recipient = auth.sub === booking.provider_id ? booking.customer_id : booking.provider_id;
+  if (recipient) {
+    await notify(recipient, "jobs", STATUS_LABEL[target] || "Booking updated", booking.service || "Your booking was updated.", {
+      entity: "booking",
+      id,
+    });
+  }
+
   return json({ booking: updated[0] });
-}
+});

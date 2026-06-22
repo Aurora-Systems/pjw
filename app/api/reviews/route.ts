@@ -1,7 +1,10 @@
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
+import { parseBody } from "@/lib/validate";
+import { notify } from "@/lib/notify";
 import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
@@ -9,6 +12,14 @@ export const runtime = "nodejs";
 export function OPTIONS() {
   return preflight();
 }
+
+const reviewSchema = z.object({
+  booking_id: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(2000).nullish(),
+  tags: z.array(z.string().trim().max(40)).max(12).nullish(),
+  photos: z.array(z.string()).max(12).nullish(),
+});
 
 /**
  * POST /api/reviews — leave a review after a job. Two-way:
@@ -18,31 +29,13 @@ export function OPTIONS() {
  * so you can only review the counterparty of a booking you were part of. A legacy
  * `provider_id` (review without a booking) is still accepted as a provider review.
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
-  let body: {
-    provider_id?: string;
-    booking_id?: string;
-    rating?: number;
-    comment?: string;
-    tags?: string[];
-    photos?: string[];
-  };
-  try {
-    body = await req.json();
-  } catch {
-    return error("Invalid JSON body");
-  }
-  if (!body.rating) return error("rating is required");
-  if (body.rating < 1 || body.rating > 5) {
-    return error("rating must be between 1 and 5");
-  }
+  const body = await parseBody(req, reviewSchema);
 
   // A review must be tied to a real booking you were part of, and only after it's done.
-  // (No free-form provider_id path — that let anyone rate any provider with no booking.)
-  if (!body.booking_id) return error("booking_id is required");
   const bk = await sql`SELECT customer_id, provider_id, status FROM bookings WHERE id = ${body.booking_id}`;
   if (bk.length === 0) return error("Booking not found", 404);
   const b = bk[0];
@@ -101,5 +94,13 @@ export async function POST(req: NextRequest) {
     `;
   }
 
+  await notify(
+    subjectId,
+    "reviews",
+    "You received a review",
+    `${body.rating}★${body.comment ? ` — "${body.comment.slice(0, 80)}"` : ""}`,
+    { entity: kind === "provider" ? "provider-reviews" : "client-reviews" }
+  );
+
   return json({ review: rows[0] }, { status: 201 });
-}
+});

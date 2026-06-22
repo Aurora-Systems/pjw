@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -10,10 +10,10 @@ export function OPTIONS() {
 }
 
 /** GET /api/jobs/:id — job detail with its bids (provider info joined). */
-export async function GET(
+export const GET = safe(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
 
   const jobs = await sql`
@@ -35,13 +35,13 @@ export async function GET(
     ORDER BY b.boosted DESC, b.created_at ASC
   `;
   return json({ job: jobs[0], bids });
-}
+});
 
 /** PATCH /api/jobs/:id — the poster cancels their job (only while it's still open). */
-export async function PATCH(
+export const PATCH = safe(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   const { id } = await params;
@@ -66,4 +66,4 @@ export async function PATCH(
     return error("This job can't be cancelled (already assigned, closed, or not yours).", 409);
   }
   return json({ job: updated[0] });
-}
+});

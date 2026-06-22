@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import crypto from "crypto";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight, publicBaseUrl } from "@/lib/http";
+import { json, error, preflight, publicBaseUrl, safe } from "@/lib/http";
 import { initiateTransaction, isPesepayConfigured } from "@/lib/pesepay";
 import { TOPUP_PACKAGES } from "@/lib/wallet";
 
@@ -17,12 +17,17 @@ export function OPTIONS() {
  * Body: { amount } (must be one of TOPUP_PACKAGES). Returns { redirectUrl, referenceNumber }.
  * The wallet is credited once the payment is confirmed paid (webhook / status poll).
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
   if (!isPesepayConfigured()) {
     return error("Payments are not configured yet (missing Pesepay keys).", 503);
+  }
+  // We only ever credit USD top-ups (confirmedUsdAmount enforces this). A non-USD config
+  // would take real money and silently never credit the wallet, so fail loudly instead.
+  if ((process.env.PESEPAY_CURRENCY || "USD") !== "USD") {
+    return error("Wallet top-ups are only supported in USD right now.", 503);
   }
 
   let body: { amount?: number };
@@ -62,4 +67,4 @@ export async function POST(req: NextRequest) {
   `;
 
   return json({ redirectUrl: tx.redirectUrl, referenceNumber: tx.referenceNumber });
-}
+});

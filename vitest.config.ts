@@ -4,7 +4,7 @@ import path from "node:path";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["lib/**/*.test.ts"],
+    include: ["lib/**/*.test.ts", "app/**/*.test.ts", "tests/**/*.test.ts"],
   },
   resolve: {
     // Mirror the tsconfig "@/*" -> project root alias so libs using @/… imports resolve.

@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { canTakeWork, chargeWallet, BOOST_BID_FEE } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export const POST = safe(async (
   }
   if (body.price == null) return error("price is required");
 
-  const job = await sql`SELECT id, status FROM jobs WHERE id = ${id}`;
+  const job = await sql`SELECT id, status, customer_id, title FROM jobs WHERE id = ${id}`;
   if (job.length === 0) return error("Job not found", 404);
   if (job[0].status !== "open") return error("This job is no longer open for bids", 409);
 
@@ -60,5 +61,16 @@ export const POST = safe(async (
                   message = EXCLUDED.message, boosted = EXCLUDED.boosted
     RETURNING *
   `;
+
+  // Tell the customer about a NEW bid (not a re-submit) so they come look.
+  if (existing.length === 0) {
+    await notify(
+      job[0].customer_id,
+      "jobs",
+      "New bid on your job",
+      `You received a $${Number(body.price).toFixed(2)} bid on "${job[0].title}".`,
+      { entity: "job", id }
+    );
+  }
   return json({ bid: rows[0] }, { status: 201 });
 });

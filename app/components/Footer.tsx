@@ -145,13 +145,13 @@ export default function Footer() {
               Terms of Service
             </a>
             <a
-              href="#"
+              href="/legal/privacy"
               className="text-xs text-pj-slate-500 hover:text-white transition-colors"
             >
-              Cookie Settings
+              Cookie Policy
             </a>
             <a
-              href="#"
+              href="/resources/support"
               className="text-xs text-pj-slate-500 hover:text-white transition-colors"
             >
               Accessibility

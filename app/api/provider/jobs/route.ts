@@ -19,7 +19,14 @@ export const GET = safe(async (req: NextRequest) => {
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
 
-  const category = req.nextUrl.searchParams.get("category");
+  // Default the feed to the provider's own trade for relevance; ?all=true shows everything,
+  // ?category= overrides explicitly.
+  let category = req.nextUrl.searchParams.get("category");
+  const showAll = req.nextUrl.searchParams.get("all") === "true";
+  if (!category && !showAll) {
+    const prof = await sql`SELECT primary_category FROM provider_profiles WHERE user_id = ${auth.sub}`;
+    category = prof[0]?.primary_category ?? null;
+  }
 
   const text = `
     SELECT j.id, j.title, j.category, j.description, j.budget_min, j.budget_max,

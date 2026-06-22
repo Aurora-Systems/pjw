@@ -31,10 +31,11 @@ export const POST = safe(async (req: NextRequest) => {
     return error(`Not enough wallet balance to boost. Top up at least $${plan.price.toFixed(2)} and try again.`, 402);
   }
 
+  // Boost ONLY buys placement (boost_until). It must never grant the "Pro"/verified trust
+  // badge — that has to be earned (verification + track record), not purchased.
   const rows = await sql`
     UPDATE provider_profiles SET
-      boost_until = now() + (${plan.hours} || ' hours')::interval,
-      is_pro = ${plan.pro ?? false} OR is_pro
+      boost_until = now() + (${plan.hours} || ' hours')::interval
     WHERE user_id = ${auth.sub}
     RETURNING boost_until, is_pro
   `;

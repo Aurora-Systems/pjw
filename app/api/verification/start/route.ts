@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight, publicBaseUrl } from "@/lib/http";
+import { json, error, preflight, publicBaseUrl, safe } from "@/lib/http";
 import { createSession, isDiditConfigured } from "@/lib/didit";
 
 export const runtime = "nodejs";
@@ -11,7 +11,7 @@ export function OPTIONS() {
 }
 
 /** POST /api/verification/start — begin a Didit identity check; returns the hosted URL to open. */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (!isDiditConfigured()) {
@@ -34,4 +34,4 @@ export async function POST(req: NextRequest) {
     WHERE id = ${auth.sub}
   `;
   return json({ url: session.url, session_id: session.session_id });
-}
+});

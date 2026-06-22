@@ -7,23 +7,26 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test.watch": "vitest"
+    "test.watch": "vitest",
+    "migrate": "node --env-file=.env.local scripts/migrate.mjs",
+    "verify:wallet": "node --env-file=.env.local scripts/verify-wallet-integrity.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
     "@aws-sdk/s3-request-presigner": "^3.1068.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@sentry/nextjs": "^8.45.0",
     "@vis.gl/react-google-maps": "^1.8.3",
-    "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

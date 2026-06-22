@@ -34,6 +34,16 @@ export function error(message: string, status = 400) {
   return json({ error: message }, { status });
 }
 
+/** Throwable HTTP error — `safe()` turns it into a CORS JSON response with the given status. */
+export class HttpError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+    this.name = "HttpError";
+  }
+}
+
 /** Preflight handler — re-export as `OPTIONS` from any route that needs it. */
 export function preflight() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
@@ -52,7 +62,10 @@ export function safe<A extends unknown[]>(
     try {
       return await handler(...args);
     } catch (e) {
-      console.error("[api] unhandled error:", e);
+      if (e instanceof HttpError) return error(e.message, e.status);
+      // Lazy import to avoid any import cycle; central error capture (Sentry-ready).
+      const { captureError } = await import("@/lib/observability");
+      captureError(e, { scope: "api" });
       return error(
         e instanceof Error ? e.message : "Something went wrong. Please try again.",
         500

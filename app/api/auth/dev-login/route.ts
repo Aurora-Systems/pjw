@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { resolveLocalUser, type AccountType } from "@/lib/users";
 import { signToken, type UserRole } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ export function OPTIONS() {
  * OTP so the app can be exercised/tested without a real inbox. Gated by
  * ALLOW_DEV_LOGIN. Never enable in production.
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   if (process.env.ALLOW_DEV_LOGIN !== "true") {
     return error("Not found", 404);
   }
@@ -44,4 +44,4 @@ export async function POST(req: NextRequest) {
   if (!user) return error("Could not create dev user", 500);
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
   return json({ token, user });
-}
+});

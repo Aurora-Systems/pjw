@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export function OPTIONS() {
 }
 
 /** GET /api/workforce — the corporate account's bulk workforce requests. */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "corporate") return error("Corporate accounts only", 403);
@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
     SELECT * FROM workforce_requests WHERE corporate_id = ${auth.sub} ORDER BY created_at DESC
   `;
   return json({ requests });
-}
+});
 
 /** POST /api/workforce — post a bulk workforce request to the verified pool. */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "corporate") return error("Corporate accounts only", 403);
@@ -65,4 +65,4 @@ export async function POST(req: NextRequest) {
     RETURNING *
   `;
   return json({ request: rows[0] }, { status: 201 });
-}
+});

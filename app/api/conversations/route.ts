@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export function OPTIONS() {
 }
 
 /** GET /api/conversations — the user's conversations with last message + counterparty. */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -28,17 +28,21 @@ export async function GET(req: NextRequest) {
     ) m ON true
     WHERE c.customer_id = $1 OR c.provider_id = $1
     ORDER BY COALESCE(m.created_at, c.created_at) DESC
+    LIMIT $2 OFFSET $3
   `;
-  const conversations = await sql.query(text, [auth.sub]);
+  const p = req.nextUrl.searchParams;
+  const limit = Math.min(Math.max(Number(p.get("limit")) || 100, 1), 200);
+  const offset = Math.max(Number(p.get("offset")) || 0, 0);
+  const conversations = await sql.query(text, [auth.sub, limit, offset]);
   return json({ conversations });
-}
+});
 
 /**
  * POST /api/conversations — find or create a conversation with another user.
  * Body: { counterparty_id, job_id? }. The signed-in user's role decides which
  * side of the conversation they sit on.
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -54,6 +58,15 @@ export async function POST(req: NextRequest) {
   const providerId = auth.role === "provider" ? auth.sub : body.counterparty_id;
   const jobId = body.job_id ?? null;
 
+  // Respect blocks in either direction.
+  const blocked = await sql`
+    SELECT 1 FROM user_blocks
+    WHERE (blocker_id = ${auth.sub} AND blocked_id = ${body.counterparty_id})
+       OR (blocker_id = ${body.counterparty_id} AND blocked_id = ${auth.sub})
+    LIMIT 1
+  `;
+  if (blocked.length > 0) return error("You can't message this user.", 403);
+
   // Find-or-create (NULL job_id is distinct under the unique index, so dedupe manually).
   const existing = await sql`
     SELECT * FROM conversations
@@ -63,10 +76,24 @@ export async function POST(req: NextRequest) {
   `;
   if (existing.length > 0) return json({ conversation: existing[0] });
 
+  // Anti-harassment: you can only START a conversation with someone you have a real
+  // relationship with (a booking together, or a bid on the other's job). No cold DMs.
+  const related = await sql`
+    SELECT 1 WHERE
+      EXISTS (SELECT 1 FROM bookings WHERE customer_id = ${customerId} AND provider_id = ${providerId})
+      OR EXISTS (
+        SELECT 1 FROM bids b JOIN jobs j ON j.id = b.job_id
+        WHERE j.customer_id = ${customerId} AND b.provider_id = ${providerId}
+      )
+  `;
+  if (related.length === 0) {
+    return error("You can only message someone you've booked or bid with.", 403);
+  }
+
   const rows = await sql`
     INSERT INTO conversations (customer_id, provider_id, job_id)
     VALUES (${customerId}, ${providerId}, ${jobId})
     RETURNING *
   `;
   return json({ conversation: rows[0] }, { status: 201 });
-}
+});

@@ -14,34 +14,37 @@ export const GET = safe(async (
 ) => {
   const { id } = await params;
 
-  const rows = await sql`
-    SELECT u.id, u.full_name, u.avatar_url, u.id_verified, u.phone_verified, u.city,
-           pp.headline, pp.bio, pp.primary_category, pp.years_experience, pp.hourly_rate,
-           pp.visit_fee, pp.min_hours, pp.rating, pp.jobs_count, pp.on_time_pct,
-           pp.reviews_count, pp.available, pp.is_pro, pp.is_top_rated,
-           pp.background_checked, pp.license_verified, pp.joined_at,
-           round(pp.lat::numeric, 2) AS lat, round(pp.lng::numeric, 2) AS lng
-    FROM users u
-    JOIN provider_profiles pp ON pp.user_id = u.id
-    WHERE u.id = ${id} AND u.role = 'provider'
-  `;
+  // All four reads are independent — run them concurrently, then 404 if the provider is missing.
+  const [rows, services, reviews, portfolio] = await Promise.all([
+    sql`
+      SELECT u.id, u.full_name, u.avatar_url, u.id_verified, u.phone_verified, u.city,
+             pp.headline, pp.bio, pp.primary_category, pp.years_experience, pp.hourly_rate,
+             pp.visit_fee, pp.min_hours, pp.rating, pp.jobs_count, pp.on_time_pct,
+             pp.reviews_count, pp.available, pp.is_pro, pp.is_top_rated,
+             pp.background_checked, pp.license_verified, pp.joined_at,
+             round(pp.lat::numeric, 2) AS lat, round(pp.lng::numeric, 2) AS lng
+      FROM users u
+      JOIN provider_profiles pp ON pp.user_id = u.id
+      WHERE u.id = ${id} AND u.role = 'provider'
+    `,
+    sql`
+      SELECT id, category, title, rate, rate_type
+      FROM provider_services WHERE provider_id = ${id}
+    `,
+    sql`
+      SELECT r.id, r.rating, r.comment, r.tags, r.photos, r.created_at, r.provider_response, r.responded_at,
+             u.full_name AS reviewer_name
+      FROM reviews r JOIN users u ON u.id = r.reviewer_id
+      WHERE r.provider_id = ${id} AND r.flagged = false
+      ORDER BY r.created_at DESC LIMIT 20
+    `,
+    sql`
+      SELECT url
+      FROM provider_portfolio WHERE provider_id = ${id}
+      ORDER BY created_at DESC LIMIT 12
+    `,
+  ]);
   if (rows.length === 0) return error("Provider not found", 404);
-
-  const services = await sql`
-    SELECT id, category, title, rate, rate_type
-    FROM provider_services WHERE provider_id = ${id}
-  `;
-  const reviews = await sql`
-    SELECT r.id, r.rating, r.comment, r.tags, r.photos, r.created_at, u.full_name AS reviewer_name
-    FROM reviews r JOIN users u ON u.id = r.reviewer_id
-    WHERE r.provider_id = ${id}
-    ORDER BY r.created_at DESC LIMIT 20
-  `;
-  const portfolio = await sql`
-    SELECT url
-    FROM provider_portfolio WHERE provider_id = ${id}
-    ORDER BY created_at DESC LIMIT 12
-  `;
 
   return json({ provider: rows[0], services, reviews, portfolio: portfolio.map((p) => p.url) });
 });

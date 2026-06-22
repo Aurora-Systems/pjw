@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import { checkPayment, mapStatus, confirmedUsdAmount } from "@/lib/pesepay";
 import { creditTopup } from "@/lib/wallet";
 
@@ -15,7 +15,7 @@ export function OPTIONS() {
  * GET /api/payments/status?reference=... — re-check a payment with Pesepay and
  * reconcile our records. Returns { status, paid }.
  */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
 
@@ -59,4 +59,4 @@ export async function GET(req: NextRequest) {
   }
 
   return json({ status, paid: status === "paid" });
-}
+});

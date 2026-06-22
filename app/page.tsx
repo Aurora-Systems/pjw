@@ -284,8 +284,8 @@ export default function Home() {
               platform.
             </p>
 
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto animate-fade-in-up">
+            {/* Search Bar — plain GET form so it works without JS and lands on /browse */}
+            <form action="/browse" method="GET" className="max-w-2xl mx-auto animate-fade-in-up">
               <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl shadow-xl shadow-pj-blue-900/5 border border-pj-slate-100">
                 <div className="flex-1 relative">
                   <svg
@@ -303,12 +303,15 @@ export default function Home() {
                   </svg>
                   <input
                     type="text"
-                    placeholder='Try "Plumber", "Solar Installer", or "Graphic Designer"'
+                    name="q"
+                    placeholder='Try "Plumber", "Solar Installer", or "Cleaner"'
                     className="w-full pl-12 pr-4 py-3.5 text-base text-pj-slate-900 placeholder:text-pj-slate-400 bg-transparent border-0 focus:outline-none focus:ring-0"
                     id="hero-search-input"
+                    aria-label="Search for a service"
                   />
                 </div>
                 <Button
+                  type="submit"
                   variant="primary"
                   size="lg"
                   className="sm:w-auto whitespace-nowrap"
@@ -317,25 +320,24 @@ export default function Home() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                   </svg>
-                  Find Talent
+                  Find help
                 </Button>
               </div>
 
               {/* Popular searches */}
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm">
                 <span className="text-white/70">Popular:</span>
-                {["Solar Installers", "Plumbing", "Home Cleaners", "Catering", "Carpentry", "Event Security"].map(
-                  (tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 rounded-full bg-white border border-pj-slate-200 text-pj-slate-600 hover:border-pj-blue-300 hover:text-pj-blue-600 hover:bg-pj-blue-50 cursor-pointer transition-all duration-200"
-                    >
-                      {tag}
-                    </span>
-                  )
-                )}
+                {["Cleaning", "Plumbing", "Electrical", "Moving", "Tutoring", "Gardening"].map((tag) => (
+                  <a
+                    key={tag}
+                    href={`/browse?q=${encodeURIComponent(tag)}`}
+                    className="px-3 py-1 rounded-full bg-white border border-pj-slate-200 text-pj-slate-600 hover:border-pj-blue-300 hover:text-pj-blue-600 hover:bg-pj-blue-50 cursor-pointer transition-all duration-200"
+                  >
+                    {tag}
+                  </a>
+                ))}
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </section>

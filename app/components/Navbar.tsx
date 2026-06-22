@@ -7,8 +7,8 @@ import Button from "./Button";
 import { getToken } from "../lib/api";
 
 const navLinks = [
-  { label: "Find Work", href: "#categories" },
-  { label: "Find Talent", href: "#how-it-works" },
+  { label: "Categories", href: "#categories" },
+  { label: "How it works", href: "#how-it-works" },
   { label: "Why PocketJobs", href: "#why-pocketjobs" },
 ];
 

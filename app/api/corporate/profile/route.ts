@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export function OPTIONS() {
 }
 
 /** GET /api/corporate/profile — company account + KYC status. */
-export async function GET(req: NextRequest) {
+export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "corporate") return error("Corporate accounts only", 403);
@@ -20,10 +20,10 @@ export async function GET(req: NextRequest) {
     FROM users WHERE id = ${auth.sub}
   `;
   return json({ profile: rows[0] });
-}
+});
 
 /** PATCH /api/corporate/profile — submit/update company KYC details. */
-export async function PATCH(req: NextRequest) {
+export const PATCH = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "corporate") return error("Corporate accounts only", 403);
@@ -54,4 +54,4 @@ export async function PATCH(req: NextRequest) {
     RETURNING id, full_name, email, company_name, company_reg_no, verification_status, account_type
   `;
   return json({ profile: rows[0] });
-}
+});

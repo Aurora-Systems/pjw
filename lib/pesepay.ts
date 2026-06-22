@@ -77,6 +77,12 @@ function httpRequest(
 ): Promise<{ status: number; text: string }> {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
+    // We use insecureHTTPParser for Pesepay's non-compliant responses; restrict that leniency
+    // to the Pesepay host only so a bad/injected URL can't point it elsewhere (SSRF guard).
+    if (u.protocol !== "https:" || u.hostname !== "api.pesepay.com") {
+      reject(new Error(`Refusing non-Pesepay request to ${u.hostname}`));
+      return;
+    }
     const req = https.request(
       {
         hostname: u.hostname,

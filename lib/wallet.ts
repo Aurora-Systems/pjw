@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { notify } from "@/lib/notify";
 
 /**
  * Provider prepaid-wallet model.
@@ -31,9 +32,22 @@ export async function getBalance(providerId: string): Promise<number> {
   return r.length ? Number(r[0].balance) : 0;
 }
 
-/** True if the provider can take new work (strictly positive balance). */
+/**
+ * True if the provider can take new work: strictly positive balance, and — when
+ * REQUIRE_PROVIDER_VERIFICATION=true — an ID-verified account (since jobs are in-person,
+ * cash, in people's homes). Defaults to balance-only so the live marketplace isn't frozen
+ * until the operator turns verification gating on.
+ */
 export async function canTakeWork(providerId: string): Promise<boolean> {
-  return (await getBalance(providerId)) > 0;
+  const rows = await sql`
+    SELECT pp.balance, u.id_verified
+    FROM provider_profiles pp JOIN users u ON u.id = pp.user_id
+    WHERE pp.user_id = ${providerId}
+  `;
+  if (rows.length === 0) return false;
+  if (Number(rows[0].balance) <= 0) return false;
+  if (process.env.REQUIRE_PROVIDER_VERIFICATION === "true" && !rows[0].id_verified) return false;
+  return true;
 }
 
 /** Commission charged for a job of the given value (10%, rounded to cents). */
@@ -53,12 +67,41 @@ export async function deductCommission(
 ): Promise<number> {
   const commission = commissionFor(jobTotal);
   if (commission <= 0) return getBalance(providerId);
+
+  // Idempotent per booking: the unique (booking_id, type) index means a given booking can
+  // only ever be charged commission once, so a client/booking retry can't double-charge.
+  // The balance is decremented ONLY if the ledger row was newly inserted (CTE), so the
+  // ledger and the balance can never disagree.
+  if (bookingId) {
+    const rows = await sql`
+      WITH ins AS (
+        INSERT INTO wallet_transactions (provider_id, type, amount, balance_after, booking_id, description)
+        VALUES (${providerId}, 'commission', ${-commission}, 0, ${bookingId}, ${description})
+        ON CONFLICT (booking_id, type) WHERE booking_id IS NOT NULL DO NOTHING
+        RETURNING id
+      )
+      UPDATE provider_profiles SET balance = balance - ${commission}
+      WHERE user_id = ${providerId} AND EXISTS (SELECT 1 FROM ins)
+      RETURNING balance
+    `;
+    if (rows.length === 0) {
+      // Either already charged (idempotent no-op) or the provider row is missing.
+      const exists = await sql`SELECT 1 FROM provider_profiles WHERE user_id = ${providerId}`;
+      if (exists.length === 0) throw new Error(`Cannot charge commission: no provider profile for ${providerId}`);
+      return getBalance(providerId); // already charged for this booking
+    }
+    const balanceAfter = Number(rows[0].balance);
+    await sql`UPDATE wallet_transactions SET balance_after = ${balanceAfter} WHERE booking_id = ${bookingId} AND type = 'commission'`;
+    return balanceAfter;
+  }
+
+  // No booking id (shouldn't normally happen): non-idempotent fallback.
   const rows = await sql`
     UPDATE provider_profiles SET balance = balance - ${commission}
     WHERE user_id = ${providerId}
     RETURNING balance
   `;
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) throw new Error(`Cannot charge commission: no provider profile for ${providerId}`);
   const balanceAfter = Number(rows[0].balance);
   await sql`
     INSERT INTO wallet_transactions (provider_id, type, amount, balance_after, booking_id, description)
@@ -151,4 +194,11 @@ export async function creditTopup(providerId: string, amount: number, reference:
   if (credited.length === 0) return; // already credited (or no such provider)
   // Stamp the running balance onto the ledger row (cosmetic; money is already correct).
   await sql`UPDATE wallet_transactions SET balance_after = ${Number(credited[0].balance)} WHERE reference = ${reference}`;
+  await notify(
+    providerId,
+    "payments",
+    "Wallet topped up",
+    `$${amt.toFixed(2)} was added to your PocketJobs balance.`,
+    { entity: "wallet" }
+  );
 }

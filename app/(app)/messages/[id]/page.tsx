@@ -18,16 +18,25 @@ export default function MessageThreadPage() {
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  const load = async () => {
-    const { messages } = await api.messages(id);
-    setMessages(messages);
+  const load = async (incremental = false) => {
+    const since = incremental && messages.length ? messages[messages.length - 1].created_at : undefined;
+    const { messages: fetched } = await api.messages(id, since);
+    if (fetched.length) {
+      setMessages((m) => {
+        if (!incremental) return fetched;
+        const seen = new Set(m.map((x) => x.id));
+        return [...m, ...fetched.filter((x) => !seen.has(x.id))];
+      });
+    } else if (!incremental) {
+      setMessages([]);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     load();
-    // Light polling so new messages from the other party appear.
-    const t = setInterval(load, 5000);
+    // Light polling so new messages from the other party appear — incremental.
+    const t = setInterval(() => load(true), 5000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

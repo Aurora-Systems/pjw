@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getAuth } from "@/lib/auth";
-import { json, error, preflight } from "@/lib/http";
+import { json, error, preflight, safe } from "@/lib/http";
 import {
   isR2Configured,
   newKey,
@@ -25,7 +25,7 @@ export function OPTIONS() {
  * `size` is validated here and signed into the URL (as Content-Length), so the upload
  * cannot exceed MAX_UPLOAD_BYTES even if the client check is bypassed.
  */
-export async function POST(req: NextRequest) {
+export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (!isR2Configured()) return error("Image storage is not configured", 503);
@@ -49,4 +49,4 @@ export async function POST(req: NextRequest) {
   const key = newKey(body.kind ?? "other", mime);
   const uploadUrl = await presignPut(key, mime, size);
   return json({ key, uploadUrl, url: publicUrl(key) }, { status: 201 });
-}
+});
