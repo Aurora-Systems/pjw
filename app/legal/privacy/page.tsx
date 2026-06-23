@@ -190,8 +190,28 @@ const blocks: Block[] = [
   ] },
 
   { h2: "19. Account and Data Deletion" },
-  { p: 'You have the right to delete your account and request removal of your personal data from our systems. To do so, navigate to Settings in the PocketJobs app and select "Delete Account", or email support@pocketjobs.co with the subject line "Account Deletion Request" including your registered email address or phone number.' },
-  { p: "Upon receiving a verified deletion request, we will deactivate your account within 7 days, anonymise or permanently delete your personal data within 90 days, and notify you by email once deletion has been completed. Certain data may be retained beyond this period where legally required, such as financial transaction records; such retained data will be isolated and not used for any other purpose." },
+  { p: 'You can permanently delete your account and personal data at any time, directly in the app: open your Profile or Account screen and select "Delete account" (available to customers, service providers, and corporate users). You can also email support@pocketjobs.co with the subject "Account Deletion Request" from your registered email address.' },
+  { p: "Deletion takes effect immediately and signs you out of all devices. Because PocketJobs handles payments and two-sided reviews, we use a delete-and-anonymise approach so the other party's records and our financial and legal obligations remain intact:" },
+  { h3: "19.1 Permanently removed" },
+  { ul: [
+    "Your saved addresses, saved/favourite providers, and blocked-user list",
+    "Your notification preferences and stored notifications",
+    "For providers: your portfolio images, listed services, availability/time-off, and public listing (you no longer appear in search results)",
+    "Your open job posts are closed and any pending bids are withdrawn",
+  ] },
+  { h3: "19.2 Anonymised" },
+  { ul: [
+    'Your name is replaced with "Deleted user", and your email address, phone number, profile photo, location, and login identifiers are cleared',
+    "Your account is deactivated and all active sessions are revoked immediately",
+  ] },
+  { h3: "19.3 Retained but de-identified" },
+  { p: 'The following are kept because the other party to a transaction, and applicable financial and legal rules, rely on them. Wherever they appear, your name shows as "Deleted user":' },
+  { ul: [
+    "Wallet and payment transaction records (kept for financial compliance — see Section 7)",
+    "Completed bookings and job history shared with the other party",
+    "Reviews and ratings you gave or received",
+  ] },
+  { p: "Any remaining provider wallet balance is forfeited on deletion, as wallet top-ups are non-refundable platform credit. Retained records are isolated, are not used for any other purpose, and are purged on the schedule described in Section 7. We will confirm completion by email where an email address is on file." },
 
   { h2: "20. Security Incident Notification" },
   { p: "In the event of a data security incident that may affect your personal information, PocketJobs commits to containing and assessing the breach within 72 hours of discovery, notifying affected users without undue delay where the breach poses a risk to their rights and freedoms, providing clear information on the nature of the breach and the data affected, and advising users on steps they can take to protect themselves." },
