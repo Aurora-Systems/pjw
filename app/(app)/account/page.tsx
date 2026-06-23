@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, setToken } from "../../lib/api";
+import { api, setToken, clearToken } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { uploadFile } from "../../lib/upload";
 import { Card, PageHeader, Field, inputClass, Loading } from "../../components/ui";
@@ -71,6 +71,22 @@ export default function AccountPage() {
       router.push("/onboarding"); // finish provider onboarding (trade + services)
     } finally {
       setBecoming(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (
+      !window.confirm(
+        "Permanently delete your account and personal data? This cannot be undone. Your booking history is kept de-identified, and any wallet balance is forfeited."
+      )
+    )
+      return;
+    try {
+      await api.deleteAccount();
+      clearToken();
+      router.push("/login");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not delete account.");
     }
   };
 
@@ -156,6 +172,16 @@ export default function AccountPage() {
           ))}
         </div>
       )}
+
+      <Card className="mt-8 border-red-200">
+        <h3 className="font-semibold text-pj-slate-900">Delete account</h3>
+        <p className="text-sm text-pj-slate-500 mt-1">
+          Permanently delete your account and personal data. This can’t be undone.
+        </p>
+        <Button variant="outline" className="mt-3 !text-red-600 !border-red-300" onClick={deleteAccount}>
+          Delete my account
+        </Button>
+      </Card>
     </div>
   );
 }

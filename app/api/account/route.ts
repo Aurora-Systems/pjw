@@ -39,3 +39,46 @@ export const PATCH = safe(async (req: NextRequest) => {
   `;
   return json({ user: rows[0] });
 });
+
+/**
+ * DELETE /api/account — delete the signed-in user's account and personal data.
+ *
+ * Soft-delete + anonymise: we strip all personal data, remove the user's listings and
+ * personal records, cancel their open jobs/bids, and revoke every session — but we KEEP
+ * de-identified financial + counterparty records (the wallet ledger, bookings, and reviews)
+ * because they're financial/legal records the other party also relies on. The user's name
+ * shows as "Deleted user" wherever those records surface. This is irreversible; any wallet
+ * balance is forfeited (top-ups are non-refundable platform credit).
+ */
+export const DELETE = safe(async (req: NextRequest) => {
+  const auth = await getAuth(req);
+  if (!auth) return error("Unauthorized", 401);
+  const uid = auth.sub;
+
+  // 1. Remove the user's public listings / live presence.
+  await sql`UPDATE provider_profiles SET available = false, headline = NULL, bio = NULL, lat = NULL, lng = NULL, boost_until = NULL WHERE user_id = ${uid}`;
+  await sql`DELETE FROM provider_portfolio WHERE provider_id = ${uid}`;
+  await sql`DELETE FROM provider_services WHERE provider_id = ${uid}`;
+  await sql`DELETE FROM provider_blocks WHERE provider_id = ${uid}`;
+  await sql`UPDATE jobs SET status = 'cancelled' WHERE customer_id = ${uid} AND status = 'open'`;
+  await sql`UPDATE bids SET status = 'declined' WHERE provider_id = ${uid} AND status = 'pending'`;
+
+  // 2. Remove personal records (no counterparty / financial value).
+  await sql`DELETE FROM favorites WHERE user_id = ${uid} OR provider_id = ${uid}`;
+  await sql`DELETE FROM saved_addresses WHERE user_id = ${uid}`;
+  await sql`DELETE FROM user_blocks WHERE blocker_id = ${uid} OR blocked_id = ${uid}`;
+  await sql`DELETE FROM notification_prefs WHERE user_id = ${uid}`;
+  await sql`DELETE FROM notifications WHERE user_id = ${uid}`;
+
+  // 3. Anonymise the user, deactivate, and revoke all sessions (clearing auth_id/email lets
+  //    the same person sign up fresh later instead of resurrecting this dead row).
+  await sql`
+    UPDATE users SET
+      full_name = 'Deleted user', email = NULL, phone = NULL, avatar_url = NULL,
+      city = NULL, auth_id = NULL, payout_number = NULL,
+      deleted_at = now(), token_version = token_version + 1
+    WHERE id = ${uid}
+  `;
+
+  return json({ ok: true });
+});

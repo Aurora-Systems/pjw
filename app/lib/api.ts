@@ -121,6 +121,7 @@ export const api = {
     request<{ key: string; uploadUrl: string; url: string }>("/uploads", { method: "POST", body, auth: true }),
   updateAccount: (body: { full_name?: string; avatar_url?: string; city?: string; payout_number?: string }) =>
     request<{ user: User }>("/account", { method: "PATCH", body, auth: true }),
+  deleteAccount: () => request<{ ok: boolean }>("/account", { method: "DELETE", auth: true }),
 
   // saved addresses
   addresses: () => request<{ addresses: SavedAddress[] }>("/addresses", { auth: true }),
