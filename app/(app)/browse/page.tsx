@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
-import { Card, Badge, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
+import { Card, Badge, Avatar, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
 import MapView, { type MapMarker } from "../../components/MapView";
 import type { Category, Provider } from "../../lib/types";
 
@@ -95,12 +95,15 @@ export default function BrowsePage() {
             <Link key={p.id} href={`/providers/${p.id}`}>
               <Card>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-bold text-pj-slate-900 flex items-center gap-1">
-                      {p.full_name}
-                      {p.id_verified && <span className="text-pj-blue-600">✓</span>}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar src={p.avatar_url} name={p.full_name} />
+                    <div className="min-w-0">
+                      <div className="font-bold text-pj-slate-900 flex items-center gap-1">
+                        {p.full_name}
+                        {p.id_verified && <span className="text-pj-blue-600">✓</span>}
+                      </div>
+                      <div className="text-sm text-pj-slate-500 truncate">{p.headline?.split("·")[0] ?? p.primary_category}</div>
                     </div>
-                    <div className="text-sm text-pj-slate-500">{p.headline?.split("·")[0] ?? p.primary_category}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-extrabold text-pj-slate-900">${p.hourly_rate}</div>

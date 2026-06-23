@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api, ApiError } from "../../../lib/api";
-import { Card, Badge, Stat, Loading, Field, inputClass } from "../../../components/ui";
+import { Card, Badge, Avatar, Stat, Loading, Field, inputClass } from "../../../components/ui";
 import Button from "../../../components/Button";
 import type { ProviderDetail, ProviderService, Review } from "../../../lib/types";
 
@@ -77,9 +77,7 @@ export default function ProviderPage() {
     <div className="grid lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-pj-blue-600 text-white flex items-center justify-center text-xl font-bold">
-            {provider.full_name.slice(0, 2).toUpperCase()}
-          </div>
+          <Avatar src={provider.avatar_url} name={provider.full_name} size={64} />
           <div>
             <h1 className="text-2xl font-extrabold text-pj-slate-900 flex items-center gap-2">
               {provider.full_name}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "../../lib/api";
-import { Card, PageHeader, Loading, Empty } from "../../components/ui";
+import { Card, Avatar, PageHeader, Loading, Empty } from "../../components/ui";
 import type { Conversation } from "../../lib/types";
 
 export default function MessagesPage() {
@@ -29,16 +29,21 @@ export default function MessagesPage() {
           {conversations.map((c) => (
             <Link key={c.id} href={`/messages/${c.id}`}>
               <Card className="hover:border-pj-blue-300 transition-colors">
-                <div className="flex justify-between items-baseline gap-3">
-                  <div className="font-semibold text-pj-slate-900">{c.counterparty_name}</div>
-                  {c.last_at && (
-                    <div className="text-xs text-pj-slate-400 shrink-0">
-                      {new Date(c.last_at).toLocaleDateString()}
+                <div className="flex items-center gap-3">
+                  <Avatar src={c.counterparty_avatar_url} name={c.counterparty_name} size={40} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline gap-3">
+                      <div className="font-semibold text-pj-slate-900">{c.counterparty_name}</div>
+                      {c.last_at && (
+                        <div className="text-xs text-pj-slate-400 shrink-0">
+                          {new Date(c.last_at).toLocaleDateString()}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="text-sm text-pj-slate-500 truncate mt-0.5">
-                  {c.last_message || "No messages yet"}
+                    <div className="text-sm text-pj-slate-500 truncate mt-0.5">
+                      {c.last_message || "No messages yet"}
+                    </div>
+                  </div>
                 </div>
               </Card>
             </Link>

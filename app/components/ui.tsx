@@ -1,5 +1,18 @@
 import React from "react";
 
+/** Round avatar — shows the image when present, otherwise the person's initials. */
+export function Avatar({ src, name, size = 44 }: { src?: string | null; name?: string | null; size?: number }) {
+  const initials = (name || "?").trim().slice(0, 2).toUpperCase();
+  return (
+    <div
+      className="rounded-full bg-pj-blue-100 text-pj-blue-700 flex items-center justify-center font-bold shrink-0 bg-cover bg-center overflow-hidden"
+      style={{ width: size, height: size, backgroundImage: src ? `url(${src})` : undefined, fontSize: size * 0.4 }}
+    >
+      {!src && initials}
+    </div>
+  );
+}
+
 export function Card({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
   return (
     <div

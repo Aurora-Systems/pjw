@@ -26,6 +26,7 @@ export interface Category {
 export interface Provider {
   id: string;
   full_name: string;
+  avatar_url: string | null;
   id_verified: boolean;
   city: string | null;
   headline: string | null;
@@ -261,6 +262,7 @@ export interface Conversation {
   job_id: string | null;
   created_at: string;
   counterparty_name: string;
+  counterparty_avatar_url: string | null;
   counterparty_id: string;
   last_message: string | null;
   last_at: string | null;

@@ -17,6 +17,7 @@ export const GET = safe(async (req: NextRequest) => {
   const text = `
     SELECT c.id, c.job_id, c.created_at,
            CASE WHEN c.customer_id = $1 THEN pr.full_name ELSE cu.full_name END AS counterparty_name,
+           CASE WHEN c.customer_id = $1 THEN pr.avatar_url ELSE cu.avatar_url END AS counterparty_avatar_url,
            CASE WHEN c.customer_id = $1 THEN c.provider_id ELSE c.customer_id END AS counterparty_id,
            m.body AS last_message, m.created_at AS last_at
     FROM conversations c
