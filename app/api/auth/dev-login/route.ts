@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { resolveLocalUser, type AccountType } from "@/lib/users";
+import { resolveLocalUser, getSessionUser, type AccountType } from "@/lib/users";
 import { signToken, type UserRole } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 
@@ -43,5 +43,5 @@ export const POST = safe(async (req: NextRequest) => {
   const user = await resolveLocalUser(authId, email, body.full_name, role, accountType, true);
   if (!user) return error("Could not create dev user", 500);
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
-  return json({ token, user });
+  return json({ token, user: (await getSessionUser(user.id)) ?? user });
 });

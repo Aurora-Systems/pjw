@@ -71,3 +71,20 @@ export async function resolveLocalUser(
   }
   return user;
 }
+
+/**
+ * The full client-facing user object (same shape /auth/me returns), including
+ * provider_onboarded. Use this when issuing a session so the client routes correctly
+ * immediately after sign-in (otherwise providers are wrongly sent to onboarding).
+ */
+export async function getSessionUser(userId: string) {
+  const rows = await sql`
+    SELECT u.id, u.phone, u.email, u.full_name, u.role, u.account_type, u.avatar_url, u.city,
+           u.id_verified, u.phone_verified, u.client_rating, u.client_reviews_count,
+           COALESCE(p.onboarded, false) AS provider_onboarded
+    FROM users u
+    LEFT JOIN provider_profiles p ON p.user_id = u.id
+    WHERE u.id = ${userId}
+  `;
+  return rows[0] ?? null;
+}

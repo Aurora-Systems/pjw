@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { verifySignInOtp } from "@/lib/neonauth";
-import { resolveLocalUser, type AccountType } from "@/lib/users";
+import { resolveLocalUser, getSessionUser, type AccountType } from "@/lib/users";
 import { signToken, type UserRole } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
@@ -70,5 +70,6 @@ export const POST = safe(async (req: NextRequest) => {
   }
   const token = await signToken({ sub: user.id, role: user.role, name: user.full_name });
   track(user.id, signup ? "signup_completed" : "login", { role: user.role });
-  return json({ token, user });
+  // Return the FULL user (incl. provider_onboarded) so the client routes correctly on sign-in.
+  return json({ token, user: (await getSessionUser(user.id)) ?? user });
 });
