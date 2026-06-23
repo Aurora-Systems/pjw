@@ -25,7 +25,7 @@ export const POST = safe(async (
 
   const { id } = await params;
   const bidRows = await sql`
-    SELECT b.*, j.customer_id, j.title AS job_title, j.location
+    SELECT b.*, j.customer_id, j.title AS job_title, j.location, j.lat, j.lng
     FROM bids b JOIN jobs j ON j.id = b.job_id
     WHERE b.id = ${id}
   `;
@@ -49,9 +49,9 @@ export const POST = safe(async (
   await sql`UPDATE bids SET status = 'declined' WHERE job_id = ${bid.job_id} AND id <> ${id}`;
 
   const booking = await sql`
-    INSERT INTO bookings (customer_id, provider_id, job_id, service, address, total, status)
+    INSERT INTO bookings (customer_id, provider_id, job_id, service, address, lat, lng, total, status)
     VALUES (${bid.customer_id}, ${bid.provider_id}, ${bid.job_id}, ${bid.job_title},
-            ${bid.location ?? null}, ${bid.price}, 'confirmed')
+            ${bid.location ?? null}, ${bid.lat ?? null}, ${bid.lng ?? null}, ${bid.price}, 'confirmed')
     RETURNING *
   `;
 

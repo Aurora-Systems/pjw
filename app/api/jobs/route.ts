@@ -36,6 +36,8 @@ const jobSchema = z.object({
   budget_max: z.number().finite().nonnegative().max(1_000_000).nullish(),
   when_text: z.string().trim().max(200).nullish(),
   location: z.string().trim().max(200).nullish(),
+  lat: z.number().finite().gte(-90).lte(90).nullish(),
+  lng: z.number().finite().gte(-180).lte(180).nullish(),
   photos: z.array(z.string()).max(12).nullish(),
 });
 
@@ -48,10 +50,10 @@ export const POST = safe(async (req: NextRequest) => {
   const photos = Array.isArray(body.photos) ? body.photos.filter(isOurUploadUrl).slice(0, 6) : null;
 
   const rows = await sql`
-    INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location, photos)
+    INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location, lat, lng, photos)
     VALUES (${auth.sub}, ${body.title}, ${body.category ?? null}, ${body.description ?? null},
             ${body.budget_min ?? null}, ${body.budget_max ?? null}, ${body.when_text ?? null}, ${body.location ?? null},
-            ${photos})
+            ${body.lat ?? null}, ${body.lng ?? null}, ${photos})
     RETURNING *
   `;
   const job = rows[0];
