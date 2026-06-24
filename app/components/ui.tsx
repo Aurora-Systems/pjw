@@ -13,6 +13,18 @@ export function Avatar({ src, name, size = 44 }: { src?: string | null; name?: s
   );
 }
 
+/** Shield marker for ID-verified providers. */
+export function VerifiedBadge({ size = 16, withLabel = false }: { size?: number; withLabel?: boolean }) {
+  return (
+    <span title="Verified provider" className="inline-flex items-center gap-1 text-pj-blue-600 align-middle">
+      <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size} aria-hidden="true">
+        <path d="M11.48 2.17a.75.75 0 0 1 1.04 0 11.2 11.2 0 0 0 7.88 3.08.75.75 0 0 1 .72.52c.41 1.25.63 2.59.63 3.98 0 5.94-4.06 10.93-9.56 12.35a.75.75 0 0 1-.38 0C6.31 20.68 2.25 15.69 2.25 9.75c0-1.39.22-2.73.63-3.98a.75.75 0 0 1 .72-.52h.15c3 0 5.71-1.17 7.73-3.08Zm4.13 7.02a.75.75 0 0 0-1.22-.87l-3.24 4.53-1.5-1.5a.75.75 0 1 0-1.06 1.06l2.12 2.12a.75.75 0 0 0 1.14-.09l3.76-5.25Z" />
+      </svg>
+      {withLabel && <span className="text-xs font-semibold">Verified</span>}
+    </span>
+  );
+}
+
 export function Card({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
   return (
     <div
