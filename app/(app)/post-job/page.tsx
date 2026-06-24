@@ -6,6 +6,7 @@ import { api, ApiError } from "../../lib/api";
 import { uploadFile } from "../../lib/upload";
 import { Card, PageHeader, Field, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
+import LocationPicker from "../../components/LocationPicker";
 import type { Category } from "../../lib/types";
 
 export default function PostJobPage() {
@@ -18,6 +19,7 @@ export default function PostJobPage() {
   const [max, setMax] = useState("");
   const [when, setWhen] = useState("This week");
   const [location, setLocation] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const photoInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -55,6 +57,8 @@ export default function PostJobPage() {
         budget_max: max ? Number(max) : undefined,
         when_text: when,
         location: location || undefined,
+        lat: coords?.lat,
+        lng: coords?.lng,
         photos: photos.length ? photos : undefined,
       });
       router.push(`/jobs/${job.id}`);
@@ -87,10 +91,15 @@ export default function PostJobPage() {
             <Field label="Budget min ($)"><input type="number" value={min} onChange={(e) => setMin(e.target.value)} className={inputClass} /></Field>
             <Field label="Budget max ($)"><input type="number" value={max} onChange={(e) => setMax(e.target.value)} className={inputClass} /></Field>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="When"><input value={when} onChange={(e) => setWhen(e.target.value)} className={inputClass} /></Field>
-            <Field label="Location"><input value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} placeholder="Avondale" /></Field>
-          </div>
+          <Field label="When"><input value={when} onChange={(e) => setWhen(e.target.value)} className={inputClass} /></Field>
+          <Field label="Where is the job? (helps providers find you)">
+            <LocationPicker
+              address={location}
+              coords={coords}
+              onAddressChange={setLocation}
+              onCoordsChange={setCoords}
+            />
+          </Field>
           <div>
             <span className="block text-sm font-semibold text-pj-slate-700 mb-2">Photos (optional)</span>
             <div className="flex flex-wrap gap-2">

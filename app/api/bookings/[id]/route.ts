@@ -119,6 +119,12 @@ export const PATCH = safe(async (
     console.error("[booking_events] insert failed:", e);
   }
 
+  // Keep the underlying job in sync so it shows the same state on BOTH sides (the customer's
+  // "My jobs" list reads jobs.status; the provider/booking views read bookings.status).
+  if (booking.job_id && (target === "completed" || target === "cancelled")) {
+    await sql`UPDATE jobs SET status = ${target} WHERE id = ${booking.job_id}`;
+  }
+
   // Cancelling before work starts refunds the provider's 10% commission (the job won't happen).
   if (target === "cancelled" && booking.provider_id) {
     await refundCommission(booking.provider_id, id);
