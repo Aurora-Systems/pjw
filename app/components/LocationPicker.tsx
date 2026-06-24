@@ -22,6 +22,7 @@ function Inner({ address, coords, onAddressChange, onCoordsChange }: Props) {
   const geocoding = useMapsLibrary("geocoding");
   const [query, setQuery] = useState(address);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [searchErr, setSearchErr] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const acService = useRef<any>(null);
 
@@ -32,10 +33,22 @@ function Inner({ address, coords, onAddressChange, onCoordsChange }: Props) {
   const onQueryChange = (v: string) => {
     setQuery(v);
     onAddressChange(v);
+    setSearchErr(null);
     if (!acService.current || v.trim().length < 3) return setPredictions([]);
     acService.current.getPlacePredictions(
       { input: v, componentRestrictions: { country: "zw" } },
-      (preds: Prediction[] | null) => setPredictions(preds ?? [])
+      (preds: Prediction[] | null, status: string) => {
+        setPredictions(preds ?? []);
+        // Surface why suggestions are empty (almost always: Places API not enabled on the key).
+        if (status !== "OK" && status !== "ZERO_RESULTS") {
+          console.warn("[places] getPlacePredictions status:", status);
+          setSearchErr(
+            status === "REQUEST_DENIED"
+              ? "Address search is unavailable (enable the Places API for this Maps key). You can still drop a pin on the map."
+              : "Couldn't load address suggestions. Drop a pin on the map instead."
+          );
+        }
+      }
     );
   };
 
@@ -98,6 +111,7 @@ function Inner({ address, coords, onAddressChange, onCoordsChange }: Props) {
           ))}
         </div>
       )}
+      {searchErr && <p className="text-xs text-amber-600 mt-1">{searchErr}</p>}
       <button
         type="button"
         onClick={useMyLocation}

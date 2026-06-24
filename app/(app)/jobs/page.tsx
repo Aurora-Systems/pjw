@@ -18,6 +18,16 @@ export default function JobsPage() {
     });
   }, []);
 
+  const cancelJob = async (id: string) => {
+    if (!window.confirm("Cancel this job? Providers will no longer be able to bid.")) return;
+    try {
+      await api.cancelJob(id);
+      setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "cancelled" } : j)));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not cancel the job.");
+    }
+  };
+
   if (loading) return <Loading />;
   return (
     <>
@@ -27,8 +37,8 @@ export default function JobsPage() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {jobs.map((j) => (
-            <Link key={j.id} href={`/jobs/${j.id}`}>
-              <Card>
+            <Card key={j.id}>
+              <Link href={`/jobs/${j.id}`} className="block">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-semibold text-pj-slate-900">{j.title}</div>
@@ -39,8 +49,16 @@ export default function JobsPage() {
                   <Badge color={j.status === "open" ? "blue" : j.status === "assigned" ? "amber" : "slate"}>{j.status}</Badge>
                 </div>
                 <div className="text-sm text-pj-slate-500 mt-3">{j.bid_count ?? 0} {j.bid_count === 1 ? "bid" : "bids"} →</div>
-              </Card>
-            </Link>
+              </Link>
+              {j.status === "open" && (
+                <button
+                  onClick={() => cancelJob(j.id)}
+                  className="mt-3 text-sm font-medium text-red-600 hover:underline"
+                >
+                  Cancel job
+                </button>
+              )}
+            </Card>
           ))}
         </div>
       )}

@@ -108,6 +108,8 @@ export const api = {
   myJobs: () => request<{ jobs: Job[] }>("/jobs", { auth: true }),
   postJob: (body: Record<string, unknown>) => request<{ job: Job }>("/jobs", { method: "POST", body, auth: true }),
   job: (id: string) => request<{ job: Job; bids: Bid[] }>(`/jobs/${id}`),
+  cancelJob: (id: string) =>
+    request<{ job: Job }>(`/jobs/${id}`, { method: "PATCH", body: { status: "cancelled" }, auth: true }),
   submitBid: (jobId: string, body: Record<string, unknown>) =>
     request<{ bid: Bid }>(`/jobs/${jobId}/bids`, { method: "POST", body, auth: true }),
   acceptBid: (bidId: string) => request<{ booking: Booking }>(`/bids/${bidId}/accept`, { method: "POST", auth: true }),
