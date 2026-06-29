@@ -344,6 +344,75 @@ export default function Home() {
 
 
       {/* ══════════════════════════════════════════
+          SHOWCASE GALLERY — real providers at work
+          ══════════════════════════════════════════ */}
+      <section id="showcase" className="py-20 lg:py-28 bg-pj-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="animate-on-scroll inline-block px-4 py-1.5 rounded-full bg-pj-blue-50 text-pj-blue-600 text-sm font-semibold mb-4">
+              On the ground
+            </span>
+            <h2 className="animate-on-scroll text-3xl sm:text-4xl lg:text-5xl font-bold text-pj-slate-900 mb-4 text-balance">
+              Real providers. Real jobs.{" "}
+              <span className="gradient-text">Real results.</span>
+            </h2>
+            <p className="animate-on-scroll text-lg text-pj-slate-500">
+              From plumbers in Harare to movers in Bulawayo, PocketJobs connects you
+              with verified, reviewed providers near you — across Zimbabwe and beyond.
+            </p>
+          </div>
+
+          {/* eslint-disable @next/next/no-img-element */}
+          <div className="animate-on-scroll grid grid-cols-2 lg:grid-cols-6 lg:grid-rows-2 gap-3 sm:gap-4 lg:h-[560px]">
+            {/* Big feature */}
+            <div className="group col-span-2 lg:col-span-3 lg:row-span-2 relative aspect-[4/3] lg:aspect-auto rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+              <img
+                src="https://cdn.pocketjobs.co/web_assets/2150990731.jpg"
+                alt="A verified PocketJobs provider on the job"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+            {/* Wide top-right */}
+            <div className="group col-span-2 lg:col-span-3 relative aspect-[16/9] lg:aspect-auto rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+              <img
+                src="https://cdn.pocketjobs.co/web_assets/20668.jpg"
+                alt="Skilled tradespeople connecting through PocketJobs"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+            {/* Bottom-right trio */}
+            <div className="group relative aspect-square lg:aspect-auto rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+              <img
+                src="https://cdn.pocketjobs.co/web_assets/134917.jpg"
+                alt="A service provider completing a task for a customer"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+            <div className="group relative aspect-square lg:aspect-auto rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+              <img
+                src="https://cdn.pocketjobs.co/web_assets/2149345518.jpg"
+                alt="Local talent at work via PocketJobs"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+            <div className="group col-span-2 lg:col-span-1 relative aspect-[16/9] lg:aspect-auto rounded-3xl overflow-hidden shadow-xl shadow-pj-blue-900/10">
+              <img
+                src="https://cdn.pocketjobs.co/web_assets/2223.jpg"
+                alt="A freelancer delivering quality work through PocketJobs"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+          </div>
+          {/* eslint-enable @next/next/no-img-element */}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
           HOW IT WORKS
           ══════════════════════════════════════════ */}
       <section id="how-it-works" className="py-20 lg:py-28 bg-white">
@@ -407,7 +476,7 @@ export default function Home() {
             {categories.map((cat, i) => (
               <div
                 key={cat.name}
-                className={`animate-on-scroll stagger-${i + 1} group bg-white rounded-3xl p-6 border border-pj-slate-100 hover:border-pj-blue-200 cursor-pointer hover:shadow-xl hover:shadow-pj-blue-900/5 hover:-translate-y-1 transition-all duration-300`}
+                className={`animate-on-scroll stagger-${Math.min(i + 1, 8)} group bg-white rounded-3xl p-6 border border-pj-slate-100 hover:border-pj-blue-200 cursor-pointer hover:shadow-xl hover:shadow-pj-blue-900/5 hover:-translate-y-1 transition-all duration-300`}
               >
                 <div className="w-12 h-12 rounded-2xl bg-pj-blue-50 flex items-center justify-center mb-5 group-hover:bg-pj-blue-600 group-hover:scale-110 transition-all duration-300">
                   {cat.icon}
@@ -452,9 +521,9 @@ export default function Home() {
                       </svg>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-pj-slate-900 text-sm mb-1">
+                      <h3 className="font-semibold text-pj-slate-900 text-sm mb-1">
                         {feat.title}
-                      </h4>
+                      </h3>
                       <p className="text-sm text-pj-slate-500 leading-relaxed">
                         {feat.description}
                       </p>
