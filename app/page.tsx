@@ -165,6 +165,42 @@ const features = [
   },
 ];
 
+/* ─── Hero background video (auto-advances to the next clip when one ends) ─── */
+const heroVideos = [
+  "https://cdn.pocketjobs.co/web_assets/286884_tiny.mp4",
+  "https://cdn.pocketjobs.co/web_assets/85351-590746476_tiny.mp4",
+  "https://cdn.pocketjobs.co/web_assets/86252-593601031_tiny.mp4",
+];
+
+function HeroVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [index, setIndex] = useState(0);
+
+  // When the clip changes, load the new source and start playing it.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.load();
+    const played = v.play();
+    if (played) played.catch(() => {});
+  }, [index]);
+
+  return (
+    <video
+      ref={videoRef}
+      className="absolute inset-0 w-full h-full object-cover"
+      autoPlay
+      muted
+      playsInline
+      preload="auto"
+      aria-hidden="true"
+      poster="https://cdn.pocketjobs.co/web_assets/17773.jpg"
+      src={heroVideos[index]}
+      onEnded={() => setIndex((i) => (i + 1) % heroVideos.length)}
+    />
+  );
+}
+
 /* ─── Testimonials (real 5-star reviews) ─── */
 type Testimonial = {
   comment: string;
@@ -232,21 +268,8 @@ export default function Home() {
         id="hero"
         className="relative pt-28 pb-20 lg:pt-40 lg:pb-32 overflow-hidden"
       >
-        {/* Background video */}
-        <video
-          className="absolute inset-0 w-full h-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
-          poster="https://cdn.pocketjobs.co/web_assets/17773.jpg"
-        >
-          <source
-            src="https://cdn.pocketjobs.co/web_assets/286884_tiny.mp4"
-            type="video/mp4"
-          />
-        </video>
+        {/* Background video — cycles through several clips */}
+        <HeroVideo />
         {/* Light scrim — mostly clear through the middle so the video shows */}
         <div className="absolute inset-0 bg-gradient-to-b from-pj-slate-900/40 via-pj-slate-900/15 to-pj-slate-900/50" />
 

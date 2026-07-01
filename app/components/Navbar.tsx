@@ -61,9 +61,9 @@ export default function Navbar() {
               <Image
                 src="/pocket_jobs_logo.png"
                 alt="PocketJobs Logo"
-                width={36}
-                height={36}
-                className="rounded-lg transition-transform duration-300 group-hover:scale-110"
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded-lg transition-transform duration-300 group-hover:scale-110"
               />
               <span className="text-xl font-bold text-pj-slate-900 tracking-tight">
                 Pocket<span className="text-pj-blue-600">Jobs</span>
