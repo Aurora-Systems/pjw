@@ -85,7 +85,10 @@ pnpm lint           # Run ESLint
   - **Customer**: `/dashboard`, `/browse`, `/providers/[id]` (book), `/post-job`, `/jobs`, `/jobs/[id]` (accept bid), `/bookings` (track + review).
   - **Provider**: `/dashboard`, `/work` (bid), `/my-bids`, `/earnings`.
   - **Corporate/Individual**: `/dashboard`, `/hiring` (+ company KYC modal), `/hiring/new`.
-  - **Admin**: `/dashboard`, `/admin` (verification queue + disputes).
+  - **Admin**: `/dashboard` (analytics: signups/jobs/bookings/GMV KPIs, 30-day trend charts, role &
+    status breakdowns, marketplace liquidity, recent signups), `/admin` (verification queue + disputes).
+    Charts are dependency-free SVG in `app/components/charts.tsx` (`TrendChart`, `BarBreakdown`, `StatTile`).
+    Seed admin: `founder@pocketjobs.co`.
   - Marketing Navbar shows "Go to dashboard" when a token is present.
 
 ## API routes (for the mobile app)
@@ -97,6 +100,9 @@ All under `app/api/`, `runtime = "nodejs"`, CORS-enabled. Bearer-token (app JWT)
 - **provider**: `GET provider/{dashboard,jobs,bids,earnings,profile,reviews}`, `PATCH provider/profile`, `POST provider/boost`
 - **corporate**: `GET corporate/dashboard`, `GET/PATCH corporate/profile`, `GET/POST workforce`
 - **admin**: `GET admin/metrics`, `GET/PATCH admin/verifications`, `GET/PATCH admin/disputes`
+  - `admin/metrics` returns the full dashboard payload. The four original keys (`active_users`, `jobs_today`,
+    `open_disputes`, `pending_verifications`) are **load-bearing for the mobile app — never rename them**;
+    everything else (`total_users`, `active_jobs`, `gmv_total`, `signups_series`, …) is additive.
 - **chat**: `GET/POST conversations`, `GET/POST conversations/:id/messages`
 
 Env (`.env.local`): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_ORIGIN`, `JWT_SECRET`, `ALLOW_DEV_LOGIN`, `CORS_ALLOW_ORIGIN`.

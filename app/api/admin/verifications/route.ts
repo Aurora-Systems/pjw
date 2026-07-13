@@ -19,7 +19,10 @@ export const GET = safe(async (req: NextRequest) => {
   const queue = await sql`
     SELECT u.id, u.full_name, u.email, u.id_verified, pp.primary_category, pp.license_verified
     FROM users u JOIN provider_profiles pp ON pp.user_id = u.id
-    WHERE u.role = 'provider' AND u.id_verified = false
+    WHERE u.role = 'provider'
+      AND u.id_verified = false
+      AND u.verification_status IN ('unverified','pending')
+      AND u.deleted_at IS NULL
     ORDER BY u.created_at ASC
   `;
   return json({ queue });

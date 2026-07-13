@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
-import { Card, Stat, PageHeader, Badge, Loading, Empty } from "../../components/ui";
+import { Card, Stat, PageHeader, Badge, Loading, Empty, Avatar } from "../../components/ui";
+import { TrendChart, BarBreakdown, StatTile, compact } from "../../components/charts";
 import Button from "../../components/Button";
 import type {
   Booking,
@@ -189,19 +190,182 @@ function CorporateHome({ name }: { name: string }) {
 /* ---------------- Admin ---------------- */
 function AdminHome() {
   const [m, setM] = useState<AdminMetrics | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    api.adminMetrics().then(setM);
+    api
+      .adminMetrics()
+      .then(setM)
+      .catch((e: Error) => setError(e?.message || "Could not load metrics"));
   }, []);
+
+  if (error) return <Empty>{error}</Empty>;
   if (!m) return <Loading />;
+
+  const money = (n: number) => `$${compact(Math.round(n))}`;
+
   return (
     <>
-      <PageHeader title="Admin overview" subtitle="Platform health and moderation." action={<Button href="/admin">Open moderation</Button>} />
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Stat value={m.active_users} label="Active users" />
-        <Stat value={m.jobs_today} label="Jobs today" />
-        <Stat value={m.open_disputes} label="Open disputes" />
-        <Stat value={m.pending_verifications} label="Pending verif." />
+      <PageHeader
+        title="Admin overview"
+        subtitle="Platform health at a glance — people, demand, fulfilment and money."
+        action={<Button href="/admin">Open moderation</Button>}
+      />
+
+      {/* Headline */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatTile
+          label="Total signups"
+          value={compact(m.total_users)}
+          sub={`+${m.new_users_today} today · +${m.new_users_7d} this week`}
+          tone={m.new_users_today > 0 ? "good" : "default"}
+        />
+        <StatTile label="Active jobs" value={compact(m.active_jobs)} sub={`${m.total_jobs} posted all-time`} />
+        <StatTile
+          label="Jobs in progress"
+          value={compact(m.active_bookings)}
+          sub={`${m.completed_bookings} completed`}
+        />
+        <StatTile
+          label="Cash volume"
+          value={money(m.cash_volume)}
+          sub="Completed jobs, paid in cash"
+        />
       </div>
+
+      {/* Money — jobs settle in cash off-platform, so revenue is top-ups + commission */}
+      <h2 className="text-lg font-bold text-pj-slate-900 mb-3">Revenue</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatTile label="Top-up revenue" value={money(m.topup_revenue)} sub="Collected from providers" />
+        <StatTile
+          label="Commission earned"
+          value={money(m.commission_earned)}
+          sub="10% of jobs taken"
+          tone={m.commission_earned > 0 ? "good" : "default"}
+        />
+        <StatTile label="Unspent credit" value={money(m.unspent_credit)} sub="Prepaid, not yet used" />
+        <StatTile
+          label="Top-ups pending"
+          value={m.pending_topups}
+          sub="Awaiting confirmation"
+          tone={m.pending_topups ? "warn" : "default"}
+        />
+      </div>
+
+      {/* Needs attention */}
+      <h2 className="text-lg font-bold text-pj-slate-900 mb-3">Needs attention</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <StatTile
+          label="Pending verifications"
+          value={m.pending_verifications}
+          sub={m.pending_verifications ? "Providers awaiting review" : "Queue clear"}
+          tone={m.pending_verifications ? "warn" : "good"}
+        />
+        <StatTile
+          label="Open disputes"
+          value={m.open_disputes}
+          sub={m.open_disputes ? "Need resolution" : "None open"}
+          tone={m.open_disputes ? "warn" : "good"}
+        />
+        <StatTile
+          label="Open jobs, no bids"
+          value={m.open_jobs_without_bids}
+          sub="Unmet demand"
+          tone={m.open_jobs_without_bids ? "warn" : "good"}
+        />
+      </div>
+
+      {/* Trends */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <div className="flex items-baseline justify-between mb-7">
+            <h2 className="font-bold text-pj-slate-900">Signups</h2>
+            <span className="text-xs text-pj-slate-500">Last 30 days · {m.new_users_30d} total</span>
+          </div>
+          <TrendChart data={m.signups_series} noun="signups" />
+        </Card>
+        <Card>
+          <div className="flex items-baseline justify-between mb-7">
+            <h2 className="font-bold text-pj-slate-900">Jobs posted</h2>
+            <span className="text-xs text-pj-slate-500">Last 30 days · {m.jobs_7d} this week</span>
+          </div>
+          <TrendChart data={m.jobs_series} noun="jobs" />
+        </Card>
+      </div>
+
+      {/* Breakdowns */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <h2 className="font-bold text-pj-slate-900 mb-4">Users by role</h2>
+          <BarBreakdown
+            items={[
+              { label: "Customers", value: m.customers },
+              { label: "Providers", value: m.providers },
+              { label: "Corporates", value: m.corporates },
+              { label: "Admins", value: m.admins },
+            ]}
+          />
+        </Card>
+        <Card>
+          <h2 className="font-bold text-pj-slate-900 mb-4">Jobs by status</h2>
+          <BarBreakdown
+            items={[
+              { label: "Open", value: m.active_jobs },
+              { label: "Assigned", value: m.assigned_jobs },
+              { label: "Completed", value: m.completed_jobs },
+              { label: "Cancelled", value: m.cancelled_jobs },
+            ]}
+          />
+        </Card>
+        <Card>
+          <h2 className="font-bold text-pj-slate-900 mb-4">Top job categories</h2>
+          <BarBreakdown items={m.top_categories.map((c) => ({ label: c.category, value: c.count }))} />
+        </Card>
+      </div>
+
+      {/* Marketplace health */}
+      <h2 className="text-lg font-bold text-pj-slate-900 mb-3">Marketplace health</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatTile label="Total bids" value={compact(m.total_bids)} sub={`${m.avg_bids_per_job} avg per job`} />
+        <StatTile
+          label="Verified providers"
+          value={`${m.verified_providers}/${m.providers}`}
+          sub="ID-verified"
+          tone={m.providers && m.verified_providers === 0 ? "warn" : "default"}
+        />
+        <StatTile
+          label="Avg rating"
+          value={m.total_reviews ? `${m.avg_rating.toFixed(1)}★` : "—"}
+          sub={`${m.total_reviews} review${m.total_reviews === 1 ? "" : "s"}`}
+        />
+        <StatTile label="Bookings" value={compact(m.total_bookings)} sub={`${m.cancelled_bookings} cancelled`} />
+      </div>
+
+      {/* Recent signups */}
+      <h2 className="text-lg font-bold text-pj-slate-900 mb-3">Recent signups</h2>
+      {m.recent_users.length === 0 ? (
+        <Empty>No signups yet.</Empty>
+      ) : (
+        <div className="rounded-2xl border border-pj-slate-200 bg-white overflow-hidden">
+          <ul className="divide-y divide-pj-slate-100">
+            {m.recent_users.map((u) => (
+              <li key={u.id} className="flex items-center gap-3 p-4">
+                <Avatar src={u.avatar_url} name={u.full_name} size={36} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-pj-slate-900 truncate">{u.full_name}</div>
+                  <div className="text-sm text-pj-slate-500 truncate">{u.email ?? "—"}</div>
+                </div>
+                <Badge color={u.role === "provider" ? "green" : u.role === "admin" ? "amber" : "blue"}>
+                  {u.role}
+                </Badge>
+                <div className="hidden sm:block w-20 text-right text-xs text-pj-slate-500 tabular-nums">
+                  {new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </>
   );
 }

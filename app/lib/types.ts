@@ -234,11 +234,74 @@ export interface WorkforceRequest {
   created_at: string;
 }
 
+export interface SeriesPoint {
+  date: string;
+  count: number;
+}
+
+export interface AdminRecentUser {
+  id: string;
+  full_name: string;
+  email: string | null;
+  role: string;
+  avatar_url: string | null;
+  created_at: string;
+}
+
 export interface AdminMetrics {
+  /** Legacy keys — also read by the mobile app. */
   active_users: number;
   jobs_today: number;
   open_disputes: number;
   pending_verifications: number;
+
+  // People
+  total_users: number;
+  new_users_today: number;
+  new_users_7d: number;
+  new_users_30d: number;
+  customers: number;
+  providers: number;
+  corporates: number;
+  admins: number;
+  verified_providers: number;
+
+  // Demand
+  total_jobs: number;
+  active_jobs: number;
+  assigned_jobs: number;
+  completed_jobs: number;
+  cancelled_jobs: number;
+  jobs_7d: number;
+
+  // Fulfilment
+  total_bookings: number;
+  active_bookings: number;
+  completed_bookings: number;
+  cancelled_bookings: number;
+
+  // Money. Jobs are cash-only and settle off-platform; the platform's money-in is
+  // provider wallet top-ups, consumed as 10% commission. There are NO payouts.
+  cash_volume: number; // value of completed bookings, paid in cash between the parties
+  topup_revenue: number; // money actually collected from providers
+  commission_earned: number; // top-up credit consumed as commission (net of refunds)
+  unspent_credit: number; // prepaid credit not yet consumed (non-refundable)
+  pending_topups: number;
+
+  // Liquidity
+  total_bids: number;
+  avg_bids_per_job: number;
+  open_jobs_without_bids: number;
+
+  // Quality
+  total_reviews: number;
+  avg_rating: number;
+
+  // Series & breakdowns
+  signups_series: SeriesPoint[];
+  jobs_series: SeriesPoint[];
+  top_categories: { category: string; count: number }[];
+  recent_users: AdminRecentUser[];
 }
 
 export interface VerificationItem {
