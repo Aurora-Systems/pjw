@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "../components/Button";
+import ResendOtp from "../components/ResendOtp";
 import { api, setToken, ApiError } from "../lib/api";
 import { inputClass } from "../components/ui";
 import type { AccountType, UserRole } from "../lib/types";
@@ -186,6 +187,7 @@ export default function SignupPage() {
               <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
                 {busy ? "Verifying…" : "Verify & create account"}
               </Button>
+              <ResendOtp email={email} onError={setError} onResent={() => setOtp("")} />
               <button type="button" onClick={() => { setStep("details"); setOtp(""); setError(null); }} className="w-full text-sm font-semibold text-pj-slate-500 hover:text-pj-blue-600 transition cursor-pointer">
                 Back
               </button>
