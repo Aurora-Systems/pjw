@@ -27,7 +27,10 @@ export interface Provider {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  /** Permission-to-work gate (an admin can grant this). NOT the badge — see didit_verified. */
   id_verified: boolean;
+  /** Completed Didit KYC and was approved. This is the ONLY thing that earns the Verified badge. */
+  didit_verified?: boolean;
   city: string | null;
   headline: string | null;
   primary_category: string | null;
@@ -98,6 +101,10 @@ export interface Job {
   created_at: string;
   bid_count?: number;
   photos?: string[] | null;
+  /** How many people this job needs (1 = a normal single-hire job). */
+  workers_needed?: number;
+  /** How many have been hired so far. The job stays open until this reaches workers_needed. */
+  hired_count?: number;
 }
 
 export interface Bid {
@@ -164,6 +171,11 @@ export interface OpenJob {
   customer_reviews_count?: number;
   bid_count: number;
   has_my_bid: boolean;
+  /** Multi-hire: how many people the job needs, and how many are already hired. */
+  workers_needed?: number;
+  hired_count?: number;
+  /** True when this provider has already been hired on this (still-open) multi-hire job. */
+  i_am_hired?: boolean;
 }
 
 export interface MyBid {

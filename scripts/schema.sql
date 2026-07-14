@@ -149,8 +149,15 @@ CREATE TABLE public.jobs (
     status text DEFAULT 'open'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     photos text[],
-    CONSTRAINT jobs_status_check CHECK ((status = ANY (ARRAY['open'::text, 'assigned'::text, 'completed'::text, 'cancelled'::text])))
+    workers_needed integer DEFAULT 1 NOT NULL,
+    hired_count integer DEFAULT 0 NOT NULL,
+    CONSTRAINT jobs_status_check CHECK ((status = ANY (ARRAY['open'::text, 'assigned'::text, 'completed'::text, 'cancelled'::text]))),
+    CONSTRAINT jobs_workers_needed_check CHECK (((workers_needed >= 1) AND (workers_needed <= 20))),
+    CONSTRAINT jobs_hired_count_check CHECK (((hired_count >= 0) AND (hired_count <= workers_needed)))
 );
+
+-- A job stays 'open' until hired_count reaches workers_needed, so a multi-hire job keeps
+-- taking bids while it is partially staffed; it flips to 'assigned' on the final hire.
 
 
 --
@@ -336,6 +343,10 @@ CREATE TABLE public.users (
     account_type text,
     didit_session_id text,
     didit_decision jsonb,
+    -- Didit's own status string ("Approved", "Declined", "Not Started", ...). This is the ONLY
+    -- source for the public Verified badge (see DIDIT_VERIFIED_SQL in lib/didit.ts). Do not use
+    -- id_verified for the badge: that is the permission-to-work gate and an admin can grant it.
+    didit_status text,
     payout_number text,
     client_rating numeric,
     client_reviews_count integer DEFAULT 0 NOT NULL,
@@ -680,6 +691,13 @@ CREATE INDEX idx_reviews_subject ON public.reviews USING btree (subject_id, kind
 --
 
 CREATE INDEX idx_users_auth_id ON public.users USING btree (auth_id);
+
+
+--
+-- Name: idx_users_didit_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_didit_status ON public.users USING btree (didit_status);
 
 
 --

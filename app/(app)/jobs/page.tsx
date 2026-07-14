@@ -48,9 +48,15 @@ export default function JobsPage() {
                   </div>
                   <Badge color={j.status === "open" ? "blue" : j.status === "assigned" ? "amber" : "slate"}>{j.status}</Badge>
                 </div>
-                <div className="text-sm text-pj-slate-500 mt-3">{j.bid_count ?? 0} {j.bid_count === 1 ? "bid" : "bids"} →</div>
+                <div className="text-sm text-pj-slate-500 mt-3">
+                  {j.bid_count ?? 0} {j.bid_count === 1 ? "bid" : "bids"}
+                  {(j.workers_needed ?? 1) > 1 && ` · hired ${j.hired_count ?? 0} of ${j.workers_needed}`} →
+                </div>
               </Link>
-              {j.status === "open" && (
+              {/* A partially staffed multi-hire job is still 'open', so gate on hired_count too —
+                  once anyone is hired the job is cancelled through their booking (which refunds
+                  the provider's commission), not from here. */}
+              {j.status === "open" && (j.hired_count ?? 0) === 0 && (
                 <button
                   onClick={() => cancelJob(j.id)}
                   className="mt-3 text-sm font-medium text-red-600 hover:underline"

@@ -12,9 +12,15 @@ export function OPTIONS() {
 }
 
 /**
- * POST /api/bids/:id/accept — the job owner accepts a bid.
- * Marks the bid accepted, the job assigned, declines other bids, and
- * creates a confirmed booking.
+ * POST /api/bids/:id/accept — the job owner hires a bidder.
+ *
+ * A job can need more than one worker (jobs.workers_needed). The customer accepts one bid
+ * per hire, so this route is called once per person. Each accept:
+ *   - claims one slot (hired_count + 1),
+ *   - marks that bid accepted and creates a confirmed booking for that provider,
+ *   - charges that provider the 10% commission.
+ * The job stays 'open' (and keeps taking bids) while it is partially staffed, and flips to
+ * 'assigned' on the final hire — at which point the remaining pending bids are declined.
  */
 export const POST = safe(async (
   _req: NextRequest,
@@ -38,27 +44,88 @@ export const POST = safe(async (
     return error("This provider is not currently accepting jobs. Please choose another bid.", 409);
   }
 
-  // Atomically claim the job: only the first accept (while it's still 'open') wins. This
-  // prevents a double-accept from creating two bookings and charging commission twice.
-  const claimed = await sql`
-    UPDATE jobs SET status = 'assigned' WHERE id = ${bid.job_id} AND status = 'open' RETURNING id
+  // Accept the bid AND claim one slot in a single statement.
+  //
+  // The BID row is deliberately the first UPDATE target: under READ COMMITTED, a blocked
+  // UPDATE re-checks its qual (EvalPlanQual) against the *row it is updating*, but sub-selects
+  // on OTHER tables still read its original snapshot. So gating the jobs UPDATE on
+  // `EXISTS (SELECT ... FROM bids WHERE status='pending')` does NOT stop a concurrent duplicate:
+  // the loser would still see the bid as pending and claim a second slot — double booking,
+  // double commission. Updating `bids` first makes the bid's own row the contended row, so the
+  // loser's `status = 'pending'` qual is re-checked and matches nothing, and the jobs UPDATE
+  // (which keys off `accepted`) then has no job_id to act on.
+  const rows = await sql`
+    WITH accepted AS (
+      UPDATE bids SET status = 'accepted'
+      WHERE id = ${id} AND status = 'pending'
+      RETURNING id, job_id
+    ), slot AS (
+      UPDATE jobs j
+      SET hired_count = j.hired_count + 1,
+          status = CASE WHEN j.hired_count + 1 >= j.workers_needed THEN 'assigned' ELSE j.status END
+      WHERE j.id = (SELECT job_id FROM accepted)
+        AND j.status = 'open'
+        AND j.hired_count < j.workers_needed
+      RETURNING j.hired_count, j.workers_needed
+    )
+    SELECT
+      (SELECT COUNT(*)::int FROM accepted) AS bid_taken,
+      (SELECT hired_count FROM slot)       AS hired_count,
+      (SELECT workers_needed FROM slot)    AS workers_needed
   `;
-  if (claimed.length === 0) return error("This job has already been assigned.", 409);
 
-  await sql`UPDATE bids SET status = 'accepted' WHERE id = ${id}`;
-  await sql`UPDATE bids SET status = 'declined' WHERE job_id = ${bid.job_id} AND id <> ${id}`;
+  const bidTaken = Number(rows[0].bid_taken) > 0;
+  if (!bidTaken) {
+    return error("That bid is no longer pending — it may already have been accepted.", 409);
+  }
+  if (rows[0].hired_count === null) {
+    // The bid flipped to 'accepted' but no slot was free (the job filled up, or was closed,
+    // concurrently). Put the bid back so it isn't stranded in a hired state with no booking.
+    await sql`UPDATE bids SET status = 'pending' WHERE id = ${id} AND status = 'accepted'`;
+    return error("This job is already fully staffed.", 409);
+  }
 
-  const booking = await sql`
-    INSERT INTO bookings (customer_id, provider_id, job_id, service, address, lat, lng, total, status)
-    VALUES (${bid.customer_id}, ${bid.provider_id}, ${bid.job_id}, ${bid.job_title},
-            ${bid.location ?? null}, ${bid.lat ?? null}, ${bid.lng ?? null}, ${bid.price}, 'confirmed')
-    RETURNING *
-  `;
+  const hired = Number(rows[0].hired_count);
+  const workersNeeded = Number(rows[0].workers_needed);
+  const full = hired >= workersNeeded;
 
-  // Take the 10% platform commission from the provider's prepaid balance.
-  await deductCommission(bid.provider_id, booking[0].id, Number(bid.price), `Commission — ${bid.job_title}`);
+  // The HTTP driver gives each statement its own implicit transaction, so there is no rollback
+  // across the writes below. If the booking or the commission fails we must hand the slot back
+  // ourselves, or it is burned forever and the job can never be fully staffed.
+  let booking;
+  try {
+    booking = await sql`
+      INSERT INTO bookings (customer_id, provider_id, job_id, service, address, lat, lng, total, status)
+      VALUES (${bid.customer_id}, ${bid.provider_id}, ${bid.job_id}, ${bid.job_title},
+              ${bid.location ?? null}, ${bid.lat ?? null}, ${bid.lng ?? null}, ${bid.price}, 'confirmed')
+      RETURNING *
+    `;
+    // Take the 10% platform commission from the provider's prepaid balance.
+    await deductCommission(bid.provider_id, booking[0].id, Number(bid.price), `Commission — ${bid.job_title}`);
+  } catch (e) {
+    if (booking?.[0]) await sql`DELETE FROM bookings WHERE id = ${booking[0].id}`;
+    await sql`
+      UPDATE jobs
+      SET hired_count = GREATEST(hired_count - 1, 0),
+          status = CASE WHEN status = 'assigned' THEN 'open' ELSE status END
+      WHERE id = ${bid.job_id}
+    `;
+    await sql`UPDATE bids SET status = 'pending' WHERE id = ${id} AND status = 'accepted'`;
+    throw e;
+  }
+
+  // Only close the door once every slot is filled — a partially staffed job keeps its bids.
+  if (full) {
+    await sql`
+      UPDATE bids SET status = 'declined'
+      WHERE job_id = ${bid.job_id} AND id <> ${id} AND status = 'pending'
+    `;
+  }
 
   await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`);
 
-  return json({ booking: booking[0] }, { status: 201 });
+  return json(
+    { booking: booking[0], hired_count: hired, workers_needed: workersNeeded, fully_staffed: full },
+    { status: 201 }
+  );
 });

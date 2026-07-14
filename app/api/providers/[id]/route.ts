@@ -17,7 +17,11 @@ export const GET = safe(async (
   // All four reads are independent — run them concurrently, then 404 if the provider is missing.
   const [rows, services, reviews, portfolio] = await Promise.all([
     sql`
-      SELECT u.id, u.full_name, u.avatar_url, u.id_verified, u.phone_verified, u.city,
+      SELECT u.id, u.full_name, u.avatar_url, u.phone_verified, u.city,
+             (u.didit_status ILIKE 'approved') AS didit_verified,
+             -- Public trust signal only — the Didit truth, under the name the mobile app reads.
+             -- Never expose the raw users.id_verified work gate here (an admin can grant it).
+             (u.didit_status ILIKE 'approved') AS id_verified,
              pp.headline, pp.bio, pp.primary_category, pp.years_experience, pp.hourly_rate,
              pp.visit_fee, pp.min_hours, pp.rating, pp.jobs_count, pp.on_time_pct,
              pp.reviews_count, pp.available, pp.is_pro, pp.is_top_rated,
@@ -25,7 +29,7 @@ export const GET = safe(async (
              round(pp.lat::numeric, 2) AS lat, round(pp.lng::numeric, 2) AS lng
       FROM users u
       JOIN provider_profiles pp ON pp.user_id = u.id
-      WHERE u.id = ${id} AND u.role = 'provider'
+      WHERE u.id = ${id} AND u.role = 'provider' AND u.deleted_at IS NULL
     `,
     sql`
       SELECT id, category, title, rate, rate_type

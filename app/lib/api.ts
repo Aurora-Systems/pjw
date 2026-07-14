@@ -112,7 +112,11 @@ export const api = {
     request<{ job: Job }>(`/jobs/${id}`, { method: "PATCH", body: { status: "cancelled" }, auth: true }),
   submitBid: (jobId: string, body: Record<string, unknown>) =>
     request<{ bid: Bid }>(`/jobs/${jobId}/bids`, { method: "POST", body, auth: true }),
-  acceptBid: (bidId: string) => request<{ booking: Booking }>(`/bids/${bidId}/accept`, { method: "POST", auth: true }),
+  acceptBid: (bidId: string) =>
+    request<{ booking: Booking; hired_count: number; workers_needed: number; fully_staffed: boolean }>(
+      `/bids/${bidId}/accept`,
+      { method: "POST", auth: true }
+    ),
 
   bookings: () => request<{ bookings: Booking[] }>("/bookings", { auth: true }),
   booking: (id: string) => request<{ booking: Booking }>(`/bookings/${id}`, { auth: true }),
@@ -159,7 +163,14 @@ export const api = {
   startVerification: () =>
     request<{ url: string; session_id: string }>("/verification/start", { method: "POST", auth: true }),
   verificationStatus: () =>
-    request<{ verification_status: string; id_verified: boolean }>("/verification/status", { auth: true }),
+    request<{
+      verification_status: string;
+      /** Permission-to-work gate (an admin can grant this) — NOT proof of KYC. */
+      id_verified: boolean;
+      didit_status: string | null;
+      /** Completed Didit KYC and approved. The only thing that counts as "verified". */
+      didit_verified: boolean;
+    }>("/verification/status", { auth: true }),
 
   // payments (Pesepay)
   initiatePayment: (booking_id: string) =>

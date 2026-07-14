@@ -56,14 +56,22 @@ export const PATCH = safe(async (
     return error("Only cancellation is supported here.");
   }
 
-  // Owner-only, and only an open job can be cancelled (assigned jobs are cancelled via the booking).
+  // Owner-only, and only a job with NOBODY hired can be cancelled here.
+  //
+  // `status = 'open'` alone is no longer enough: a multi-hire job stays 'open' while it is
+  // partially staffed, so without the hired_count guard a customer could cancel a job on which
+  // providers already hold confirmed bookings and have each paid the 10% commission. Once anyone
+  // is hired, cancellation goes through the individual bookings (which refund the commission).
   const updated = await sql`
     UPDATE jobs SET status = 'cancelled'
-    WHERE id = ${id} AND customer_id = ${auth.sub} AND status = 'open'
+    WHERE id = ${id} AND customer_id = ${auth.sub} AND status = 'open' AND hired_count = 0
     RETURNING *
   `;
   if (updated.length === 0) {
-    return error("This job can't be cancelled (already assigned, closed, or not yours).", 409);
+    return error(
+      "This job can't be cancelled here — it's already closed, not yours, or someone is hired on it. Cancel the individual bookings instead.",
+      409
+    );
   }
   return json({ job: updated[0] });
 });

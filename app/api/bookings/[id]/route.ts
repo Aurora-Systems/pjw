@@ -121,8 +121,46 @@ export const PATCH = safe(async (
 
   // Keep the underlying job in sync so it shows the same state on BOTH sides (the customer's
   // "My jobs" list reads jobs.status; the provider/booking views read bookings.status).
-  if (booking.job_id && (target === "completed" || target === "cancelled")) {
-    await sql`UPDATE jobs SET status = ${target} WHERE id = ${booking.job_id}`;
+  //
+  // A job can have up to workers_needed bookings, so a single booking must NOT decide the job's
+  // fate — otherwise the first of three hired providers to tap "complete" (or "cancel") would
+  // end the job for everyone.
+  if (booking.job_id && target === "completed") {
+    // The job is done only when no booking on it is still live.
+    await sql`
+      UPDATE jobs SET status = 'completed'
+      WHERE id = ${booking.job_id}
+        AND NOT EXISTS (
+          SELECT 1 FROM bookings b
+          WHERE b.job_id = ${booking.job_id} AND b.status NOT IN ('completed', 'cancelled')
+        )
+    `;
+  }
+
+  if (booking.job_id && target === "cancelled") {
+    // Cancelling one hire hands that slot back so the customer can hire a replacement: drop
+    // hired_count and reopen the job if it had been fully staffed. The job itself is only
+    // cancelled when nothing live is left on it AND nobody remains hired.
+    await sql`
+      UPDATE jobs
+      SET hired_count = GREATEST(hired_count - 1, 0),
+          status = CASE WHEN status = 'assigned' THEN 'open' ELSE status END
+      WHERE id = ${booking.job_id}
+    `;
+    // Only a SINGLE-hire job dies with its booking (the long-standing behaviour). A multi-hire
+    // job whose hire cancels still needs people, so it just goes back to taking bids — cancelling
+    // it outright would silently kill a job that still needs, say, 3 painters.
+    await sql`
+      UPDATE jobs SET status = 'cancelled'
+      WHERE id = ${booking.job_id}
+        AND workers_needed = 1
+        AND hired_count = 0
+        AND status <> 'completed'
+        AND NOT EXISTS (
+          SELECT 1 FROM bookings b
+          WHERE b.job_id = ${booking.job_id} AND b.status NOT IN ('completed', 'cancelled')
+        )
+    `;
   }
 
   // Cancelling before work starts refunds the provider's 10% commission (the job won't happen).

@@ -31,11 +31,15 @@ export const GET = safe(async (req: NextRequest) => {
   const text = `
     SELECT j.id, j.title, j.category, j.description, j.budget_min, j.budget_max,
            j.when_text, j.location, j.created_at,
+           j.workers_needed, j.hired_count,
            cu.full_name AS customer_name,
            cu.client_rating AS customer_rating,
            cu.client_reviews_count AS customer_reviews_count,
            COUNT(b.id)::int AS bid_count,
-           BOOL_OR(b.provider_id = $1) AS has_my_bid
+           BOOL_OR(b.provider_id = $1) AS has_my_bid,
+           -- A multi-hire job stays 'open' after someone is hired, so a provider can still see a job
+           -- they have already won. Tell them, instead of showing it as just another open job.
+           COALESCE(BOOL_OR(b.provider_id = $1 AND b.status = 'accepted'), false) AS i_am_hired
     FROM jobs j
     JOIN users cu ON cu.id = j.customer_id
     LEFT JOIN bids b ON b.job_id = j.id

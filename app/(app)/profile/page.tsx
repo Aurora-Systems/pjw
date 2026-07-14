@@ -37,7 +37,7 @@ export default function ProfilePage() {
       setAvailable(Boolean(profile.available));
     });
     api.portfolio().then(({ portfolio }) => setPortfolio(portfolio));
-    api.verificationStatus().then((s) => setVstatus(s.id_verified ? "verified" : s.verification_status)).catch(() => {});
+    api.verificationStatus().then((s) => setVstatus(s.didit_verified ? "verified" : s.verification_status)).catch(() => {});
   };
   useEffect(() => {
     if (user?.role === "provider") loadAll();
@@ -98,7 +98,8 @@ export default function ProfilePage() {
   };
   const checkVerify = async () => {
     const s = await api.verificationStatus();
-    setVstatus(s.id_verified ? "verified" : s.verification_status);
+    // Didit is the only thing that counts as verified here — an admin grant is not KYC.
+    setVstatus(s.didit_verified ? "verified" : s.verification_status);
     await refresh();
   };
 

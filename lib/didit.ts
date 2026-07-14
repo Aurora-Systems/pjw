@@ -80,3 +80,15 @@ export function mapDiditStatus(status: string): {
     return { verification_status: "rejected", id_verified: false };
   return { verification_status: "pending", id_verified: false };
 }
+
+/**
+ * SQL predicate for the public "Verified" badge: the provider actually completed Didit
+ * KYC and Didit APPROVED them. Expects the users table aliased as `u`. It is a constant,
+ * not user input, so it is safe to interpolate.
+ *
+ * Do NOT use `users.id_verified` for the badge. That column is the *permission to work*
+ * gate (lib/wallet.ts canTakeWork + POST /jobs/:id/bids), and an admin can set it from the
+ * moderation queue to let someone bid without any KYC. Conflating the two is exactly how
+ * 22 providers ended up wearing a Verified badge without ever completing Didit.
+ */
+export const DIDIT_VERIFIED_SQL = `(u.didit_status ILIKE 'approved')`;

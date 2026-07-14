@@ -46,7 +46,16 @@ export const POST = safe(async (
 
   // Boosting a bid costs a fee from the wallet — but only the first time this bid
   // becomes boosted (re-submitting an already-boosted bid is free).
-  const existing = await sql`SELECT boosted FROM bids WHERE job_id = ${id} AND provider_id = ${auth.sub}`;
+  const existing = await sql`SELECT boosted, status FROM bids WHERE job_id = ${id} AND provider_id = ${auth.sub}`;
+
+  // A multi-hire job stays 'open' while it fills up, so "job is open" no longer implies "this
+  // provider isn't hired yet". Without this guard, an already-hired provider could re-POST and the
+  // upsert would rewrite the price on their ACCEPTED bid — diverging from the booking total and the
+  // commission already charged at the old price.
+  if (existing.length > 0 && existing[0].status !== "pending") {
+    return error("You're already hired on this job — your bid can't be changed.", 409);
+  }
+
   const wantsBoost = body.boosted === true;
   const alreadyBoosted = existing.length > 0 && existing[0].boosted === true;
   if (wantsBoost && !alreadyBoosted) {

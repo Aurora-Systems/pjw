@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     UPDATE users SET
       verification_status = ${mapped.verification_status},
       id_verified = ${mapped.id_verified},
+      didit_status = ${d.status ?? null},
       didit_decision = ${d.decision ? JSON.stringify(d.decision) : null}::jsonb
     WHERE didit_session_id = ${sessionId}
   `;

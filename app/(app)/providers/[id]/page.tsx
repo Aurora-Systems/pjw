@@ -81,7 +81,7 @@ export default function ProviderPage() {
           <div>
             <h1 className="text-2xl font-extrabold text-pj-slate-900 flex items-center gap-2">
               {provider.full_name}
-              {provider.id_verified && <VerifiedBadge size={22} withLabel />}
+              {provider.didit_verified && <VerifiedBadge size={22} withLabel />}
             </h1>
             <p className="text-pj-slate-500">{provider.headline}</p>
           </div>

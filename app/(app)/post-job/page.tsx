@@ -18,6 +18,7 @@ export default function PostJobPage() {
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const [when, setWhen] = useState("This week");
+  const [workers, setWorkers] = useState(1);
   const [location, setLocation] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -60,6 +61,7 @@ export default function PostJobPage() {
         lat: coords?.lat,
         lng: coords?.lng,
         photos: photos.length ? photos : undefined,
+        workers_needed: workers,
       });
       router.push(`/jobs/${job.id}`);
     } catch (e) {
@@ -92,6 +94,29 @@ export default function PostJobPage() {
             <Field label="Budget max ($)"><input type="number" value={max} onChange={(e) => setMax(e.target.value)} className={inputClass} /></Field>
           </div>
           <Field label="When"><input value={when} onChange={(e) => setWhen(e.target.value)} className={inputClass} /></Field>
+          <Field label="How many people do you need?">
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setWorkers(n)}
+                  className={`min-w-11 rounded-full px-4 py-1.5 text-sm font-medium border transition ${
+                    workers === n
+                      ? "bg-pj-blue-600 border-pj-blue-600 text-white"
+                      : "bg-white border-pj-slate-200 text-pj-slate-600 hover:border-pj-slate-300"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-pj-slate-500">
+              {workers === 1
+                ? "You'll hire one provider for this job."
+                : `You can hire up to ${workers} providers — the job keeps taking bids until all ${workers} slots are filled.`}
+            </p>
+          </Field>
           <Field label="Where is the job? (helps providers find you)">
             <LocationPicker
               address={location}

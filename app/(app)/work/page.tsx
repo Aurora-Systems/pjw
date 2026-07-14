@@ -47,7 +47,14 @@ export default function WorkPage() {
           {jobs.map((j) => (
             <Card key={j.id}>
               <div className="flex justify-between">
-                <div className="flex gap-2">{j.category && <Badge>{j.category}</Badge>}</div>
+                <div className="flex gap-2">
+                  {j.category && <Badge>{j.category}</Badge>}
+                  {(j.workers_needed ?? 1) > 1 && (
+                    <Badge color="amber">
+                      {Math.max(0, (j.workers_needed ?? 1) - (j.hired_count ?? 0))} of {j.workers_needed} slots left
+                    </Badge>
+                  )}
+                </div>
                 <span className="font-extrabold text-pj-slate-900">${j.budget_min ?? "?"}–{j.budget_max ?? "?"}</span>
               </div>
               <div className="font-semibold text-pj-slate-900 mt-2">{j.title}</div>
@@ -60,7 +67,10 @@ export default function WorkPage() {
                 ].filter(Boolean).join(" · ")}
               </div>
               <div className="mt-4">
-                {j.has_my_bid ? (
+                {/* A multi-hire job stays open after a hire, so this provider may already have won it. */}
+                {j.i_am_hired ? (
+                  <Badge color="green">You&apos;re hired</Badge>
+                ) : j.has_my_bid ? (
                   <Badge color="green">Bid submitted</Badge>
                 ) : (
                   <Button size="sm" onClick={() => setBidJob(j)}>Submit a bid</Button>

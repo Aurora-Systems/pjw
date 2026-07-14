@@ -100,7 +100,7 @@ export default function BrowsePage() {
                     <div className="min-w-0">
                       <div className="font-bold text-pj-slate-900 flex items-center gap-1">
                         {p.full_name}
-                        {p.id_verified && <VerifiedBadge />}
+                        {p.didit_verified && <VerifiedBadge />}
                       </div>
                       <div className="text-sm text-pj-slate-500 truncate">{p.headline?.split("·")[0] ?? p.primary_category}</div>
                     </div>

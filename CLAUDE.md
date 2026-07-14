@@ -108,6 +108,39 @@ All under `app/api/`, `runtime = "nodejs"`, CORS-enabled. Bearer-token (app JWT)
 Env (`.env.local`): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_ORIGIN`, `JWT_SECRET`, `ALLOW_DEV_LOGIN`, `CORS_ALLOW_ORIGIN`.
 New tables vs. earlier: `workforce_requests`, `disputes`, and `users.auth_id`/`company_*`/`verification_status` columns.
 
+## Domain rules worth knowing
+- **Verified badge = Didit only.** The public "Verified" badge is driven by `users.didit_status ILIKE
+  'approved'` (predicate: `DIDIT_VERIFIED_SQL` in `lib/didit.ts`). Do **not** use `users.id_verified` for the
+  badge — that column is the *permission-to-work* gate (`canTakeWork()` + `POST /jobs/:id/bids`), and an admin
+  can grant it from the moderation queue without any KYC. Conflating the two once put a Verified badge on 22
+  providers who never completed Didit.
+  The **public** provider payloads (`/providers`, `/providers/:id`, `/favorites`) therefore never expose the
+  raw gate: they emit the Didit truth as **both** `didit_verified` and `id_verified` (the mobile app renders
+  its shield from `id_verified`, so this keeps mobile correct without a release). The gate itself is read
+  server-side from `users.id_verified` and is unaffected.
+  The provider's own KYC card (`/profile`) is likewise driven by `didit_verified`, not `id_verified` —
+  otherwise an admin-approved provider sees "verified", the Verify button hides, and they can never start
+  Didit or earn the badge.
+- **Multi-hire jobs.** `jobs.workers_needed` (1–20) and `jobs.hired_count`. **`status = 'open'` no longer
+  means "nobody is hired"** — a partially staffed job deliberately stays `open` so it keeps taking bids, and
+  flips to `assigned` on the final hire (then the remaining pending bids are declined). Anything that used to
+  treat `open` as "nothing decided" must also check `hired_count`:
+  - `PATCH /jobs/:id` (cancel) requires `hired_count = 0`; once anyone is hired you cancel their **booking**
+    (which refunds that provider's commission), not the job.
+  - `POST /jobs/:id/bids` rejects a provider whose bid is already `accepted` (the upsert would otherwise
+    rewrite the price on a bid that has a booking + commission behind it).
+  - `PATCH /bookings/:id` must NOT mirror one booking's status onto the job: complete only sets the job
+    `completed` when no booking on it is still live; cancel hands the slot back (`hired_count - 1`, reopen)
+    and only cancels a **single-hire** job outright.
+  - `POST /bids/:id/accept` claims one slot per call. In its CTE the **bids** UPDATE must come first: under
+    READ COMMITTED a blocked UPDATE re-checks its qual only against the row it is updating, so gating on
+    `EXISTS (SELECT … FROM bids …)` does **not** stop a concurrent duplicate — it would claim a second slot,
+    double-book and charge the 10% commission twice. Returns `{ hired_count, workers_needed, fully_staffed }`.
+- **Soft-deleted users** (`users.deleted_at`) must be excluded from every public listing — providers list,
+  provider detail, and favourites all filter `u.deleted_at IS NULL`.
+- 37 service categories (`scripts/seed.sql`), weighted toward blue-collar trades. The **slug** is the stable
+  key (`jobs.category`, `provider_profiles.primary_category`) — never rename a slug that is in use.
+
 ## Important Notes
 - The **mobile** app lives at `/Users/macbook/work/aurora/pocket-jobs` (Ionic React). It is the primary
   consumer of these API routes. Keep the two repos' CLAUDE.md/MEMORY.md cross-references consistent.

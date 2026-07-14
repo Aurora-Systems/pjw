@@ -39,6 +39,8 @@ const jobSchema = z.object({
   lat: z.number().finite().gte(-90).lte(90).nullish(),
   lng: z.number().finite().gte(-180).lte(180).nullish(),
   photos: z.array(z.string()).max(12).nullish(),
+  // How many people this job needs. Mirrors the jobs_workers_needed_check DB constraint.
+  workers_needed: z.number().int().min(1).max(20).nullish(),
 });
 
 /** POST /api/jobs — post a new job (open for bids). */
@@ -50,10 +52,10 @@ export const POST = safe(async (req: NextRequest) => {
   const photos = Array.isArray(body.photos) ? body.photos.filter(isOurUploadUrl).slice(0, 6) : null;
 
   const rows = await sql`
-    INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location, lat, lng, photos)
+    INSERT INTO jobs (customer_id, title, category, description, budget_min, budget_max, when_text, location, lat, lng, photos, workers_needed)
     VALUES (${auth.sub}, ${body.title}, ${body.category ?? null}, ${body.description ?? null},
             ${body.budget_min ?? null}, ${body.budget_max ?? null}, ${body.when_text ?? null}, ${body.location ?? null},
-            ${body.lat ?? null}, ${body.lng ?? null}, ${photos})
+            ${body.lat ?? null}, ${body.lng ?? null}, ${photos}, ${body.workers_needed ?? 1})
     RETURNING *
   `;
   const job = rows[0];
