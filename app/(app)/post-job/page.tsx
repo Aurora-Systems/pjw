@@ -7,6 +7,7 @@ import { uploadFile } from "../../lib/upload";
 import { Card, PageHeader, Field, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
 import LocationPicker from "../../components/LocationPicker";
+import CategoryPicker from "../../components/CategoryPicker";
 import type { Category } from "../../lib/types";
 
 export default function PostJobPage() {
@@ -79,14 +80,7 @@ export default function PostJobPage() {
           <Field label="Job title"><input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="Fix leaking kitchen tap" /></Field>
           <div>
             <span className="block text-sm font-semibold text-pj-slate-700 mb-2">Category</span>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((c) => (
-                <button key={c.id} type="button" onClick={() => setCategory(category === c.slug ? undefined : c.slug)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium border transition ${category === c.slug ? "bg-pj-blue-600 border-pj-blue-600 text-white" : "bg-white border-pj-slate-200 text-pj-slate-600"}`}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
+            <CategoryPicker categories={categories} value={category} onChange={setCategory} />
           </div>
           <Field label="Description"><textarea value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} rows={4} placeholder="Kitchen mixer tap leaks at the base. Probably needs a new cartridge." /></Field>
           <div className="grid grid-cols-2 gap-4">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
 import { Card, Badge, Avatar, VerifiedBadge, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
 import MapView, { type MapMarker } from "../../components/MapView";
+import CategoryPicker from "../../components/CategoryPicker";
 import type { Category, Provider } from "../../lib/types";
 
 const HARARE = { lat: -17.8252, lng: 31.0335 };
@@ -43,12 +44,14 @@ export default function BrowsePage() {
     return () => clearTimeout(t);
   }, [load]);
 
+  const selectedCategoryName = category ? categories.find((c) => c.slug === category)?.name : undefined;
+
   return (
     <>
       <PageHeader title="Browse providers" subtitle="Verified pros across Harare." />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input value={q} onChange={(e) => setQ(e.target.value)} className={inputClass} placeholder="Search services or workers…" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} className={inputClass} placeholder="Search workers by name…" />
         <select value={sort} onChange={(e) => setSort(e.target.value)} className={`${inputClass} sm:w-48`}>
           <option value="rating">Top rated</option>
           <option value="price">Lowest price</option>
@@ -56,11 +59,18 @@ export default function BrowsePage() {
         </select>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button onClick={() => setCategory(undefined)} className={chip(!category)}>All</button>
-        {categories.map((c) => (
-          <button key={c.id} onClick={() => setCategory(c.slug)} className={chip(category === c.slug)}>{c.name}</button>
-        ))}
+      {/* Collapsible category filter — a searchable, grouped picker instead of 70 flat chips. */}
+      <details className="mb-4 rounded-xl border border-pj-slate-200" open={!!category}>
+        <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-pj-slate-700">
+          <span>Category{selectedCategoryName ? `: ${selectedCategoryName}` : ""}</span>
+          <span className="text-pj-slate-400">{category ? "Change" : "Filter by service"}</span>
+        </summary>
+        <div className="border-t border-pj-slate-100 p-3">
+          <CategoryPicker categories={categories} value={category} onChange={setCategory} includeAll />
+        </div>
+      </details>
+
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         <button onClick={() => setVerified((v) => !v)} className={chip(verified)}>Verified only</button>
         <div className="ml-auto flex gap-2">
           <button onClick={() => setView("list")} className={chip(view === "list")}>List</button>

@@ -21,6 +21,8 @@ export interface Category {
   name: string;
   slug: string;
   icon: string | null;
+  /** Sector heading used to group the picker (e.g. "Home & Property"). */
+  sector: string | null;
 }
 
 export interface Provider {

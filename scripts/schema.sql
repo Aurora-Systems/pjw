@@ -98,7 +98,8 @@ CREATE TABLE public.categories (
     name text NOT NULL,
     slug text NOT NULL,
     icon text,
-    sort_order integer DEFAULT 0 NOT NULL
+    sort_order integer DEFAULT 0 NOT NULL,
+    sector text
 );
 
 

@@ -9,7 +9,7 @@ export function OPTIONS() {
 
 export const GET = safe(async () => {
   const categories = await sql`
-    SELECT id, name, slug, icon FROM categories ORDER BY sort_order ASC
+    SELECT id, name, slug, icon, sector FROM categories ORDER BY sort_order ASC
   `;
   return json({ categories });
 });

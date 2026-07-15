@@ -138,8 +138,13 @@ New tables vs. earlier: `workforce_requests`, `disputes`, and `users.auth_id`/`c
     double-book and charge the 10% commission twice. Returns `{ hired_count, workers_needed, fully_staffed }`.
 - **Soft-deleted users** (`users.deleted_at`) must be excluded from every public listing — providers list,
   provider detail, and favourites all filter `u.deleted_at IS NULL`.
-- 37 service categories (`scripts/seed.sql`), weighted toward blue-collar trades. The **slug** is the stable
-  key (`jobs.category`, `provider_profiles.primary_category`) — never rename a slug that is in use.
+- 70 service categories, grouped into sectors (home & property, moving/errands, family care, professional,
+  creative, events, automotive, labour & security, wellness). **`scripts/seed-categories.mjs` is the single
+  source of truth** — it upserts the list into the DB and regenerates `scripts/seed.sql`; edit the `.mjs`, not
+  the `.sql`. The **slug** is the stable key (`jobs.category`, `provider_profiles.primary_category`) — never
+  rename or remove a slug that is in use; only `name`/`icon`/`sort_order` may change (hence `ON CONFLICT DO
+  UPDATE`). Finer-grained client services are folded into existing slugs rather than duplicated (e.g.
+  Babysitting → `childcare`, event photography → `photography`) to avoid splitting the provider pool.
 
 ## Important Notes
 - The **mobile** app lives at `/Users/macbook/work/aurora/pocket-jobs` (Ionic React). It is the primary

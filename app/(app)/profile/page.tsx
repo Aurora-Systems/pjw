@@ -9,6 +9,18 @@ import { Card, PageHeader, Badge, Loading, Field, inputClass } from "../../compo
 import Button from "../../components/Button";
 import type { ProviderService } from "../../lib/types";
 
+/**
+ * KYC display status for the "Identity verification" card. Didit approval is the ONLY thing that
+ * reads as verified. An admin can set verification_status='verified' + id_verified=true with no KYC;
+ * that must NOT show as verified here, or the Verify button hides and the provider can never start
+ * Didit (a dead end) — so a non-Didit "verified" is clamped back to "unverified".
+ */
+function kycVstatus(s: { didit_verified: boolean; verification_status: string }): string {
+  if (s.didit_verified) return "verified";
+  if (s.verification_status === "verified") return "unverified";
+  return s.verification_status;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, loading, refresh } = useAuth();
@@ -37,7 +49,7 @@ export default function ProfilePage() {
       setAvailable(Boolean(profile.available));
     });
     api.portfolio().then(({ portfolio }) => setPortfolio(portfolio));
-    api.verificationStatus().then((s) => setVstatus(s.didit_verified ? "verified" : s.verification_status)).catch(() => {});
+    api.verificationStatus().then((s) => setVstatus(kycVstatus(s))).catch(() => {});
   };
   useEffect(() => {
     if (user?.role === "provider") loadAll();
@@ -98,8 +110,7 @@ export default function ProfilePage() {
   };
   const checkVerify = async () => {
     const s = await api.verificationStatus();
-    // Didit is the only thing that counts as verified here — an admin grant is not KYC.
-    setVstatus(s.didit_verified ? "verified" : s.verification_status);
+    setVstatus(kycVstatus(s));
     await refresh();
   };
 
