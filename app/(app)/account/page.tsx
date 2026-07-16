@@ -20,6 +20,7 @@ export default function AccountPage() {
   const [city, setCity] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [becoming, setBecoming] = useState(false);
+  const [dataBusy, setDataBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const avatarInput = useRef<HTMLInputElement>(null);
 
@@ -71,6 +72,17 @@ export default function AccountPage() {
       router.push("/onboarding"); // finish provider onboarding (trade + services)
     } finally {
       setBecoming(false);
+    }
+  };
+
+  const downloadData = async () => {
+    setDataBusy(true);
+    try {
+      await api.downloadMyData();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not prepare your data.");
+    } finally {
+      setDataBusy(false);
     }
   };
 
@@ -173,7 +185,17 @@ export default function AccountPage() {
         </div>
       )}
 
-      <Card className="mt-8 border-red-200">
+      <Card className="mt-8">
+        <h3 className="font-semibold text-pj-slate-900">Your data</h3>
+        <p className="text-sm text-pj-slate-500 mt-1">
+          Download a copy of the personal data we hold about you, in JSON format.
+        </p>
+        <Button variant="outline" className="mt-3" onClick={downloadData} disabled={dataBusy}>
+          {dataBusy ? "Preparing…" : "Download my data"}
+        </Button>
+      </Card>
+
+      <Card className="mt-4 border-red-200">
         <h3 className="font-semibold text-pj-slate-900">Delete account</h3>
         <p className="text-sm text-pj-slate-500 mt-1">
           Permanently delete your account and personal data. This can’t be undone.

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ApiError, setToken } from "../../lib/api";
+import { api, ApiError, setToken, clearToken } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { uploadFile } from "../../lib/upload";
 import { Card, PageHeader, Badge, Loading, Field, inputClass } from "../../components/ui";
@@ -25,6 +25,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, loading, refresh } = useAuth();
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [dataBusy, setDataBusy] = useState(false);
   const [services, setServices] = useState<ProviderService[]>([]);
   const [portfolio, setPortfolio] = useState<{ id: string; url: string }[]>([]);
   const [vstatus, setVstatus] = useState("unverified");
@@ -39,6 +40,33 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!loading && user && user.role !== "provider") router.replace("/dashboard");
   }, [loading, user, router]);
+
+  const downloadData = async () => {
+    setDataBusy(true);
+    try {
+      await api.downloadMyData();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not prepare your data.");
+    } finally {
+      setDataBusy(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (
+      !window.confirm(
+        "Permanently delete your account and personal data? This cannot be undone. Any remaining wallet balance is forfeited, and your completed job records are kept de-identified."
+      )
+    )
+      return;
+    try {
+      await api.deleteAccount();
+      clearToken();
+      router.push("/login");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not delete account.");
+    }
+  };
 
   const loadAll = () => {
     api.providerProfile().then(({ profile, services }) => {
@@ -220,6 +248,27 @@ export default function ProfilePage() {
           }}
         >
           Switch to client account
+        </Button>
+      </Card>
+
+      <Card className="mt-4">
+        <h3 className="font-semibold text-pj-slate-900">Your data</h3>
+        <p className="text-sm text-pj-slate-500 mt-1">
+          Download a copy of the personal data we hold about you, in JSON format.
+        </p>
+        <Button variant="outline" className="mt-3" onClick={downloadData} disabled={dataBusy}>
+          {dataBusy ? "Preparing…" : "Download my data"}
+        </Button>
+      </Card>
+
+      <Card className="mt-4 border-red-200">
+        <h3 className="font-semibold text-pj-slate-900">Delete account</h3>
+        <p className="text-sm text-pj-slate-500 mt-1">
+          Permanently delete your account and personal data. Any remaining wallet balance is
+          forfeited and this can’t be undone.
+        </p>
+        <Button variant="outline" className="mt-3 !text-red-600 !border-red-300" onClick={deleteAccount}>
+          Delete my account
         </Button>
       </Card>
     </div>

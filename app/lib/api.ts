@@ -128,6 +128,27 @@ export const api = {
   updateAccount: (body: { full_name?: string; avatar_url?: string; city?: string; payout_number?: string }) =>
     request<{ user: User }>("/account", { method: "PATCH", body, auth: true }),
   deleteAccount: () => request<{ ok: boolean }>("/account", { method: "DELETE", auth: true }),
+  /** Download a copy of your data (triggers a file save in the browser). */
+  downloadMyData: async () => {
+    const res = await fetch("/api/account/export", {
+      headers: { Authorization: `Bearer ${getToken() ?? ""}` },
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new ApiError(JSON.parse(t || "{}")?.error || "Could not prepare your data", res.status);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pocketjobs-my-data.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+  /** Ask us to email a copy of your data to your registered address. */
+  requestMyData: () => request<{ ok: boolean; email: string }>("/account/data-request", { method: "POST", auth: true }),
 
   // saved addresses
   addresses: () => request<{ addresses: SavedAddress[] }>("/addresses", { auth: true }),

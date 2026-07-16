@@ -141,7 +141,8 @@ const blocks: Block[] = [
     "Right to Data Portability: request a copy of your data in a structured, commonly used, machine-readable format.",
     "Right to Object: object to certain processing activities, including processing based on legitimate interests; we respond within 30 days.",
   ] },
-  { p: "To exercise any of these rights, please contact us at pocketjobszw@outlook.com. We may require you to verify your identity before processing your request." },
+  { p: 'You can exercise the two most common rights yourself, straight away, from your Profile/Account screen: "Request my data" (in the app, emailed to your registered address) or "Download my data" (on the web) gives you a machine-readable JSON copy of everything we hold about you, and "Delete account" permanently removes it (see Section 19).' },
+  { p: "For any other request, or if you need help, contact us at pocketjobszw@outlook.com. We may require you to verify your identity before processing your request." },
 
   { h2: "11. Children's Privacy" },
   { p: "PocketJobs is intended for use by individuals who are 18 years of age or older. We do not knowingly collect, process, or store personal information from individuals under the age of 18. If we become aware that we have inadvertently collected personal information from a person under 18 without verifiable parental consent, we will take immediate steps to delete that information from our systems. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately at support@pocketjobs.co." },
