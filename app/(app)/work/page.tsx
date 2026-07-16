@@ -4,12 +4,17 @@ import { useEffect, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/api";
 import { Card, Badge, PageHeader, Loading, Empty, Field, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
+import CategoryPicker from "../../components/CategoryPicker";
 import type { Category, OpenJob } from "../../lib/types";
 
 export default function WorkPage() {
   const [jobs, setJobs] = useState<OpenJob[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<string>();
+  // With no category the API narrows the feed to the provider's own trade, so "all trades" has to
+  // be an explicit flag rather than simply clearing the category.
+  const [showAll, setShowAll] = useState(false);
+  const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [bidJob, setBidJob] = useState<OpenJob | null>(null);
 
@@ -19,29 +24,63 @@ export default function WorkPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { jobs } = await api.providerOpenJobs(category);
+    const { jobs } = await api.providerOpenJobs({ category, q: q || undefined, all: showAll });
     setJobs(jobs);
     setLoading(false);
-  }, [category]);
+  }, [category, q, showAll]);
 
   useEffect(() => {
-    load();
+    const t = setTimeout(load, 250);
+    return () => clearTimeout(t);
   }, [load]);
+
+  const selectedName = category ? categories.find((c) => c.slug === category)?.name : undefined;
+  const tradeLabel = selectedName ?? (showAll ? "All trades" : "My trade");
 
   return (
     <>
       <PageHeader title="Available jobs" subtitle="Bid on open jobs near you." />
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button onClick={() => setCategory(undefined)} className={chip(!category)}>All trades</button>
-        {categories.map((c) => (
-          <button key={c.id} onClick={() => setCategory(c.slug)} className={chip(category === c.slug)}>{c.name}</button>
-        ))}
-      </div>
+
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        className={`${inputClass} mb-3`}
+        placeholder="Search jobs — e.g. “leaking tap”, “painting”…"
+        aria-label="Search available jobs"
+      />
+
+      {/* Trade filter: a searchable, grouped picker — listing all 70 trades as chips was unusable. */}
+      <details className="mb-6 rounded-xl border border-pj-slate-200" open={!!category}>
+        <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-pj-slate-700">
+          <span>Trade: {tradeLabel}</span>
+          <span className="text-pj-slate-400">Change</span>
+        </summary>
+        <div className="border-t border-pj-slate-100 p-3">
+          <CategoryPicker
+            categories={categories}
+            value={category}
+            onChange={(slug) => {
+              setCategory(slug);
+              // Clearing the trade means "show me everything", not "fall back to my own trade".
+              setShowAll(slug === undefined);
+            }}
+            includeAll
+            allLabel="All trades"
+            placeholder="Search trades…"
+          />
+        </div>
+      </details>
 
       {loading ? (
         <Loading />
       ) : jobs.length === 0 ? (
-        <Empty>No open jobs in this trade right now.</Empty>
+        <Empty>
+          {q
+            ? `No open jobs match “${q}”.`
+            : showAll
+              ? "No open jobs right now."
+              : "No open jobs in your trade right now — try “All trades”."}
+        </Empty>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {jobs.map((j) => (
@@ -129,8 +168,4 @@ function BidModal({ job, onClose, onDone }: { job: OpenJob; onClose: () => void;
       </div>
     </div>
   );
-}
-
-function chip(active: boolean) {
-  return `rounded-full px-4 py-1.5 text-sm font-medium border transition ${active ? "bg-pj-blue-600 border-pj-blue-600 text-white" : "bg-white border-pj-slate-200 text-pj-slate-600 hover:border-pj-slate-300"}`;
 }

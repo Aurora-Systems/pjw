@@ -191,8 +191,18 @@ export const api = {
   postReview: (body: Record<string, unknown>) => request<{ review: Review }>("/reviews", { method: "POST", body, auth: true }),
 
   providerDashboard: () => request<ProviderDashboard>("/provider/dashboard", { auth: true }),
-  providerOpenJobs: (category?: string) =>
-    request<{ jobs: OpenJob[] }>(`/provider/jobs${category ? `?category=${category}` : ""}`, { auth: true }),
+  /**
+   * Open jobs to bid on. With no args the API defaults the feed to the provider's own trade;
+   * pass `all: true` to genuinely show every trade (omitting the category alone does NOT).
+   */
+  providerOpenJobs: (opts?: { category?: string; q?: string; all?: boolean }) => {
+    const p = new URLSearchParams();
+    if (opts?.category) p.set("category", opts.category);
+    if (opts?.q) p.set("q", opts.q);
+    if (opts?.all) p.set("all", "true");
+    const s = p.toString();
+    return request<{ jobs: OpenJob[] }>(`/provider/jobs${s ? `?${s}` : ""}`, { auth: true });
+  },
   providerBids: () => request<{ bids: MyBid[] }>("/provider/bids", { auth: true }),
   providerEarnings: () => request<Earnings>("/provider/earnings", { auth: true }),
   // Provider prepaid wallet (balance + top-ups + commission ledger).

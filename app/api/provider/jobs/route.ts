@@ -12,7 +12,7 @@ export function OPTIONS() {
 /**
  * GET /api/provider/jobs — open jobs the provider can bid on.
  * Excludes the provider's own jobs; flags jobs they've already bid on.
- * Optional ?category= filter.
+ * Query: ?category= (trade slug), ?all=true (every trade), ?q= (search title/description/trade).
  */
 export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
@@ -27,6 +27,8 @@ export const GET = safe(async (req: NextRequest) => {
     const prof = await sql`SELECT primary_category FROM provider_profiles WHERE user_id = ${auth.sub}`;
     category = prof[0]?.primary_category ?? null;
   }
+  // Free-text search across the job title, description and trade. Empty string means "no filter".
+  const q = req.nextUrl.searchParams.get("q")?.trim() || null;
 
   const text = `
     SELECT j.id, j.title, j.category, j.description, j.budget_min, j.budget_max,
@@ -45,10 +47,13 @@ export const GET = safe(async (req: NextRequest) => {
     LEFT JOIN bids b ON b.job_id = j.id
     WHERE j.status = 'open' AND j.customer_id <> $1
       AND ($2::text IS NULL OR j.category = $2)
+      AND ($3::text IS NULL OR j.title ILIKE '%' || $3 || '%'
+                            OR j.description ILIKE '%' || $3 || '%'
+                            OR j.category ILIKE '%' || $3 || '%')
     GROUP BY j.id, cu.full_name, cu.client_rating, cu.client_reviews_count
     ORDER BY j.created_at DESC
     LIMIT 50
   `;
-  const jobs = await sql.query(text, [auth.sub, category]);
+  const jobs = await sql.query(text, [auth.sub, category, q]);
   return json({ jobs });
 });
