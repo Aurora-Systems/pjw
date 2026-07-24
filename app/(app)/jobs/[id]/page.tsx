@@ -35,8 +35,10 @@ export default function JobBidsPage() {
       const res = await api.acceptBid(bid.id);
       // Multi-hire: only leave the page once every slot is filled. Otherwise stay here so the
       // customer can keep hiring, and refresh to show the new progress + remaining bids.
+      // On the final hire go straight to the shared job page — the same page the provider lands
+      // on from their "bid accepted" email, so both sides are looking at the same thing.
       if (res.fully_staffed) {
-        router.push("/bookings");
+        router.push(`/bookings/${res.booking.id}`);
         return;
       }
       await load();

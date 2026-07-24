@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { api } from "../../lib/api";
+import Link from "next/link";
+import { api, ApiError } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
 import { uploadFile } from "../../lib/upload";
 import { Card, Badge, PageHeader, Loading, Empty, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
@@ -18,27 +20,39 @@ const NEXT_LABEL: Record<string, string> = {
 };
 
 export default function BookingsPage() {
+  const { user } = useAuth();
+  const isProvider = user?.role === "provider";
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState<Booking | null>(null);
 
   const load = async () => {
-    const { bookings } = await api.bookings();
-    setBookings(bookings);
-    setLoading(false);
+    try {
+      const { bookings } = await api.bookings();
+      setBookings(bookings);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Could not load your bookings.");
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => {
     load();
   }, []);
 
+  // Only the provider drives progress (the server enforces this too — a customer PATCH is 403).
   const advance = async (b: Booking) => {
     const next = FLOW[Math.min(FLOW.indexOf(b.status) + 1, FLOW.length - 1)];
     setBusy(b.id);
+    setErr(null);
     try {
       const { booking } = await api.updateBooking(b.id, next);
       setBookings((cur) => cur.map((x) => (x.id === b.id ? booking : x)));
       if (next === "completed") setReviewing(booking);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Could not update the job.");
     } finally {
       setBusy(null);
     }
@@ -49,6 +63,7 @@ export default function BookingsPage() {
   return (
     <>
       <PageHeader title="My bookings" subtitle="Track your jobs from confirmed to complete." />
+      {err && <p className="text-sm text-red-600 mb-4">{err}</p>}
       {bookings.length === 0 ? (
         <Empty>No bookings yet.</Empty>
       ) : (
@@ -57,7 +72,9 @@ export default function BookingsPage() {
             <Card key={b.id}>
               <div className="flex justify-between items-start gap-4">
                 <div>
-                  <div className="font-semibold text-pj-slate-900">{b.service}</div>
+                  <Link href={`/bookings/${b.id}`} className="font-semibold text-pj-slate-900 hover:text-pj-blue-600">
+                    {b.service}
+                  </Link>
                   <div className="text-sm text-pj-slate-500">
                     {b.counterparty_name}{b.address ? ` · ${b.address}` : ""}{b.total ? ` · $${b.total}` : ""}
                   </div>
@@ -91,8 +108,14 @@ export default function BookingsPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-4">
-                {b.total ? <Badge color="slate">💵 Pay ${b.total} in cash</Badge> : null}
-                {NEXT_LABEL[b.status] && (
+                <Button size="sm" variant="outline" href={`/bookings/${b.id}`}>Open job</Button>
+                {b.total ? (
+                  <Badge color={b.payment_status === "paid" ? "green" : "slate"}>
+                    {b.payment_status === "paid" ? `✓ Paid $${b.total}` : `💵 Pay $${b.total} in cash`}
+                  </Badge>
+                ) : null}
+                {/* Progress is provider-driven; the server 403s a customer, so don't show them a dead button. */}
+                {isProvider && NEXT_LABEL[b.status] && (
                   <Button size="sm" variant="outline" disabled={busy === b.id} onClick={() => advance(b)}>
                     {busy === b.id ? "…" : NEXT_LABEL[b.status]}
                   </Button>

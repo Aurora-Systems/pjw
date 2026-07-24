@@ -136,6 +136,16 @@ New tables vs. earlier: `workforce_requests`, `disputes`, and `users.auth_id`/`c
     READ COMMITTED a blocked UPDATE re-checks its qual only against the row it is updating, so gating on
     `EXISTS (SELECT … FROM bids …)` does **not** stop a concurrent duplicate — it would claim a second slot,
     double-book and charge the 10% commission twice. Returns `{ hired_count, workers_needed, fully_staffed }`.
+- **The shared job page.** Accepting a bid creates a booking, and both parties then track that one
+  booking on a single page: web `/bookings/[id]`, mobile `/app/booking/:id` (customer) and
+  `/provider/active/:id` (provider). `GET /api/bookings/:id` returns the booking + the originating
+  job's details + a `booking_events` timeline + `viewer_role`, and is readable **only** by the two
+  parties. On the final hire the customer is redirected there, and the provider is emailed
+  (`bidAcceptedEmail` in `lib/email.ts`) with a deep link to the same page.
+- **Payment is confirmed by the PROVIDER, never the customer.** Jobs are cash-only and settle
+  off-platform, so nothing else can flip `bookings.payment_status` — `PATCH /api/bookings/:id/payment`
+  is provider-only (customer gets 403) and idempotent. Letting a customer self-declare "paid" would
+  let them close out a job the provider was never paid for.
 - **Soft-deleted users** (`users.deleted_at`) must be excluded from every public listing — providers list,
   provider detail, and favourites all filter `u.deleted_at IS NULL`.
 - 70 service categories, grouped into sectors (home & property, moving/errands, family care, professional,

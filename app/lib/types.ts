@@ -149,6 +149,40 @@ export interface Booking {
   provider_lat?: number | null;
   provider_lng?: number | null;
   provider_location_at?: string | null;
+  // ── present on the booking-detail (shared job page) response ──
+  paid_at?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+  notes?: string | null;
+  customer_name?: string;
+  provider_name?: string;
+  customer_avatar_url?: string | null;
+  provider_avatar_url?: string | null;
+  customer_phone?: string | null;
+  provider_phone?: string | null;
+  provider_rating?: string | null;
+  provider_reviews_count?: number | null;
+  provider_didit_verified?: boolean;
+  job_title?: string | null;
+  job_description?: string | null;
+  job_category?: string | null;
+  job_when_text?: string | null;
+  job_budget_min?: string | null;
+  job_budget_max?: string | null;
+  job_photos?: string[] | null;
+  workers_needed?: number | null;
+  hired_count?: number | null;
+}
+
+/** One entry in a booking's status audit trail. */
+export interface BookingEvent {
+  from_status: string | null;
+  to_status: string;
+  note: string | null;
+  created_at: string;
+  actor_name: string | null;
 }
 
 export interface ProviderDashboard {

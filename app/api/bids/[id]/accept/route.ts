@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { notify } from "@/lib/notify";
+import { sendEmail, bidAcceptedEmail } from "@/lib/email";
 import { canTakeWork, deductCommission } from "@/lib/wallet";
 
 export const runtime = "nodejs";
@@ -31,8 +32,14 @@ export const POST = safe(async (
 
   const { id } = await params;
   const bidRows = await sql`
-    SELECT b.*, j.customer_id, j.title AS job_title, j.location, j.lat, j.lng
-    FROM bids b JOIN jobs j ON j.id = b.job_id
+    SELECT b.*, j.customer_id, j.title AS job_title, j.location, j.lat, j.lng,
+           j.when_text AS job_when_text,
+           pr.email AS provider_email, pr.full_name AS provider_name,
+           cu.full_name AS customer_name
+    FROM bids b
+    JOIN jobs j ON j.id = b.job_id
+    JOIN users pr ON pr.id = b.provider_id
+    JOIN users cu ON cu.id = j.customer_id
     WHERE b.id = ${id}
   `;
   if (bidRows.length === 0) return error("Bid not found", 404);
@@ -122,7 +129,36 @@ export const POST = safe(async (
     `;
   }
 
-  await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`);
+  const bookingId = booking[0].id as string;
+
+  // In-app + push, deep-linked to the shared job page.
+  await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`, {
+    entity: "booking",
+    id: bookingId,
+  });
+
+  // Email the provider — winning a bid is the highest-value off-app event they can get.
+  // Best-effort: sendEmail() no-ops without Resend config and never throws, but guard anyway so a
+  // mail failure can never roll back a hire that already took commission.
+  try {
+    if (bid.provider_email) {
+      await sendEmail(
+        String(bid.provider_email),
+        `Your bid was accepted — ${bid.job_title}`,
+        bidAcceptedEmail({
+          providerName: String(bid.provider_name ?? "there"),
+          customerName: String(bid.customer_name ?? "The client"),
+          jobTitle: String(bid.job_title),
+          price: String(bid.price),
+          location: bid.location ? String(bid.location) : null,
+          whenText: bid.job_when_text ? String(bid.job_when_text) : null,
+          bookingId,
+        })
+      );
+    }
+  } catch (e) {
+    console.error("[bid accepted email] failed:", e);
+  }
 
   return json(
     { booking: booking[0], hired_count: hired, workers_needed: workersNeeded, fully_staffed: full },

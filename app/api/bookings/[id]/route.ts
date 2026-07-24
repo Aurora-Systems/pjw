@@ -23,7 +23,11 @@ export function OPTIONS() {
 const FLOW = ["confirmed", "on_the_way", "arrived", "in_progress", "completed"];
 const STATUSES = [...FLOW, "cancelled"];
 
-/** GET /api/bookings/:id — single booking incl. live provider location (tracking). */
+/**
+ * GET /api/bookings/:id — the shared job page for BOTH sides of a booking.
+ * Returns the booking (incl. live provider location), the originating job's details, the
+ * counterparty, and the status timeline so each party can see exactly where the job stands.
+ */
 export const GET = safe(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -34,17 +38,40 @@ export const GET = safe(async (
 
   const rows = await sql`
     SELECT b.*, cu.full_name AS customer_name, pr.full_name AS provider_name,
+           cu.avatar_url AS customer_avatar_url, pr.avatar_url AS provider_avatar_url,
+           cu.phone AS customer_phone, pr.phone AS provider_phone,
            pp.lat AS provider_base_lat, pp.lng AS provider_base_lng,
+           pp.primary_category AS provider_category,
+           (pr.didit_status ILIKE 'approved') AS provider_didit_verified,
            cu.client_rating AS customer_rating, cu.client_reviews_count AS customer_reviews_count,
-           pp.rating AS provider_rating, pp.reviews_count AS provider_reviews_count
+           pp.rating AS provider_rating, pp.reviews_count AS provider_reviews_count,
+           j.title AS job_title, j.description AS job_description, j.category AS job_category,
+           j.when_text AS job_when_text, j.budget_min AS job_budget_min, j.budget_max AS job_budget_max,
+           j.photos AS job_photos, j.workers_needed, j.hired_count
     FROM bookings b
     JOIN users cu ON cu.id = b.customer_id
     JOIN users pr ON pr.id = b.provider_id
     LEFT JOIN provider_profiles pp ON pp.user_id = b.provider_id
+    LEFT JOIN jobs j ON j.id = b.job_id
     WHERE b.id = ${id} AND (b.customer_id = ${auth.sub} OR b.provider_id = ${auth.sub})
   `;
   if (rows.length === 0) return error("Booking not found", 404);
-  return json({ booking: rows[0] });
+
+  // Status timeline (audit trail). Best-effort: an empty timeline must not break the page.
+  let timeline: Record<string, unknown>[] = [];
+  try {
+    timeline = await sql`
+      SELECT e.from_status, e.to_status, e.note, e.created_at, u.full_name AS actor_name
+      FROM booking_events e
+      LEFT JOIN users u ON u.id = e.actor_id
+      WHERE e.booking_id = ${id}
+      ORDER BY e.created_at ASC
+    `;
+  } catch (e) {
+    console.error("[booking timeline] read failed:", e);
+  }
+
+  return json({ booking: rows[0], timeline, viewer_role: auth.sub === rows[0].provider_id ? "provider" : "customer" });
 });
 
 /** PATCH /api/bookings/:id — update booking status (tracking / completion). */

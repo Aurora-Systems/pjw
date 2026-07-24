@@ -5,6 +5,7 @@ import type {
   AdminMetrics,
   Bid,
   Booking,
+  BookingEvent,
   BookingStatus,
   Category,
   Conversation,
@@ -119,7 +120,19 @@ export const api = {
     ),
 
   bookings: () => request<{ bookings: Booking[] }>("/bookings", { auth: true }),
-  booking: (id: string) => request<{ booking: Booking }>(`/bookings/${id}`, { auth: true }),
+  /** The shared job page: booking + originating job details + status timeline + the viewer's role. */
+  booking: (id: string) =>
+    request<{ booking: Booking; timeline: BookingEvent[]; viewer_role: "customer" | "provider" }>(
+      `/bookings/${id}`,
+      { auth: true }
+    ),
+  /** Provider confirms they received the cash (they hold it, so only they can confirm). */
+  confirmBookingPaid: (id: string) =>
+    request<{ booking: Booking }>(`/bookings/${id}/payment`, {
+      method: "PATCH",
+      body: { paid: true },
+      auth: true,
+    }),
 
   // uploads / account / portfolio / verification
   // Mint a presigned URL for a direct-to-R2 upload; client PUTs bytes then stores `url`.
