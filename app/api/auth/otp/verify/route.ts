@@ -5,6 +5,7 @@ import { signToken, type UserRole } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { track } from "@/lib/analytics";
+import { isReviewAccount, reviewCode } from "@/lib/review";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,16 @@ export const POST = safe(async (req: NextRequest) => {
   const email = body.email?.trim().toLowerCase();
   const otp = body.otp?.trim();
   if (!email || !otp) return error("email and otp are required");
+
+  // App-store review account: accept the fixed code (no Neon Auth round-trip, since the
+  // reviewer never received an email). Resolves/creates a single demo customer account.
+  if (isReviewAccount(email)) {
+    if (otp !== reviewCode()) return error("Invalid or expired code", 401);
+    const rvUser = await resolveLocalUser("apple-review", email, "App Review", "customer", null, true);
+    if (!rvUser) return error("Could not sign in the review account", 500);
+    const rvToken = await signToken({ sub: rvUser.id, role: rvUser.role, name: rvUser.full_name });
+    return json({ token: rvToken, user: (await getSessionUser(rvUser.id)) ?? rvUser });
+  }
 
   // Sign-up must collect a name (proper onboarding); sign-in must not create accounts.
   const signup = body.signup === true;

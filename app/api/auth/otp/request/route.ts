@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sendSignInOtp } from "@/lib/neonauth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { isReviewAccount } from "@/lib/review";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,11 @@ export const POST = safe(async (req: NextRequest) => {
   if (!email || !email.includes("@")) {
     return error("A valid email is required");
   }
+
+  // App-store review account: no email is sent (the reviewer can't receive it).
+  // Report success so the client advances to the code screen; the fixed code is
+  // accepted in /auth/otp/verify.
+  if (isReviewAccount(email)) return json({ ok: true });
 
   // Throttle code sends to stop email-bombing: per-IP and per-email.
   await rateLimit(`otp-req:ip:${clientIp(req)}`, 12, 600);
