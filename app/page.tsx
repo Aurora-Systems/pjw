@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Button from "./components/Button";
+import HowItWorksFilms from "./components/HowItWorksFilms";
 
 /* ─── Scroll animation observer ─── */
 function useScrollAnimation() {
@@ -452,6 +453,9 @@ export default function Home() {
               and designed to connect you with the right talent.
             </p>
           </div>
+
+          {/* 30-second explainer films — one per point of view */}
+          <HowItWorksFilms />
 
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             {steps.map((step, i) => (
