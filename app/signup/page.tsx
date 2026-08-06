@@ -12,7 +12,7 @@ import type { AccountType, UserRole } from "../lib/types";
 
 const ROLES: { value: UserRole; title: string; sub: string }[] = [
   { value: "customer", title: "Hire help", sub: "Book a provider or post a one-off job" },
-  { value: "provider", title: "Find work", sub: "Offer your services and bid on jobs" },
+  { value: "provider", title: "Find work", sub: "List your services and make offers on jobs" },
   { value: "corporate", title: "Hire a team", sub: "Bulk workforce or freelancers" },
 ];
 

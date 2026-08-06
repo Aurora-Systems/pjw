@@ -229,11 +229,12 @@ export const api = {
    * Open jobs to bid on. With no args the API defaults the feed to the provider's own trade;
    * pass `all: true` to genuinely show every trade (omitting the category alone does NOT).
    */
-  providerOpenJobs: (opts?: { category?: string; q?: string; all?: boolean }) => {
+  providerOpenJobs: (opts?: { category?: string; q?: string; mine?: boolean }) => {
     const p = new URLSearchParams();
     if (opts?.category) p.set("category", opts.category);
     if (opts?.q) p.set("q", opts.q);
-    if (opts?.all) p.set("all", "true");
+    // The feed shows every trade by default; ?mine=true narrows it to the provider's own trade.
+    if (opts?.mine) p.set("mine", "true");
     const s = p.toString();
     return request<{ jobs: OpenJob[] }>(`/provider/jobs${s ? `?${s}` : ""}`, { auth: true });
   },
@@ -284,6 +285,15 @@ export const api = {
       `/conversations/${conversationId}/messages${after ? `?after=${encodeURIComponent(after)}` : ""}`,
       { auth: true }
     ),
-  sendMessage: (conversationId: string, body: string) =>
-    request<{ message: Message }>(`/conversations/${conversationId}/messages`, { method: "POST", body: { body }, auth: true }),
+  /** Send a chat message. Either `body` or an attachment (or both) must be present. */
+  sendMessage: (
+    conversationId: string,
+    body: string,
+    attachment?: { attachment_url: string; attachment_type?: string; attachment_name?: string }
+  ) =>
+    request<{ message: Message }>(`/conversations/${conversationId}/messages`, {
+      method: "POST",
+      body: { body, ...(attachment ?? {}) },
+      auth: true,
+    }),
 };

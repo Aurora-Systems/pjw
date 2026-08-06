@@ -19,6 +19,18 @@ import crypto from "crypto";
 const PREFIX = (process.env.R2_KEY_PREFIX || "uploads").replace(/^\/+|\/+$/g, "");
 
 export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+/**
+ * Document types accepted for chat attachments only (kind === "chat"). Every other
+ * upload kind — avatars, portfolio, verification — stays image-only.
+ */
+export const ALLOWED_DOC_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/msword",
+  "text/plain",
+];
+
 export const MAX_UPLOAD_BYTES = 6 * 1024 * 1024; // 6MB
 
 const EXT: Record<string, string> = {
@@ -26,6 +38,10 @@ const EXT: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "application/pdf": "pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/msword": "doc",
+  "text/plain": "txt",
 };
 
 export function isR2Configured(): boolean {

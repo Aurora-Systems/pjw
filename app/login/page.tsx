@@ -143,7 +143,7 @@ export default function LoginPage() {
         <div className="relative text-center max-w-lg z-10">
           <h3 className="text-4xl font-extrabold text-white tracking-tight mb-4 leading-tight">Hire trusted hands, fast.</h3>
           <p className="text-blue-100 text-lg leading-relaxed">
-            Browse verified providers, post a job, compare bids and book — all in one place.
+            Browse verified providers, post a job, compare offers and book — all in one place.
           </p>
         </div>
       </div>

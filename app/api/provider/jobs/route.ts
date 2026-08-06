@@ -10,20 +10,24 @@ export function OPTIONS() {
 }
 
 /**
- * GET /api/provider/jobs — open jobs the provider can bid on.
- * Excludes the provider's own jobs; flags jobs they've already bid on.
- * Query: ?category= (trade slug), ?all=true (every trade), ?q= (search title/description/trade).
+ * GET /api/provider/jobs — open jobs the provider can offer on.
+ * Excludes the provider's own jobs; flags jobs they've already made an offer on.
+ * Query: ?category= (trade slug), ?mine=true (only the provider's own trade), ?q= (search).
+ *
+ * The feed deliberately defaults to EVERY trade. Narrowing it to the provider's own trade meant a
+ * provider in a quiet trade opened the app to an empty screen and assumed the marketplace was dead;
+ * showing everything (with ?mine=true available as an opt-in filter) keeps the feed alive. This is
+ * a server-side default on purpose — it fixes already-released app builds that send no filter.
+ * ?all=true is still accepted from older clients and is now simply the default behaviour.
  */
 export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
   if (auth.role !== "provider") return error("Providers only", 403);
 
-  // Default the feed to the provider's own trade for relevance; ?all=true shows everything,
-  // ?category= overrides explicitly.
   let category = req.nextUrl.searchParams.get("category");
-  const showAll = req.nextUrl.searchParams.get("all") === "true";
-  if (!category && !showAll) {
+  const mineOnly = req.nextUrl.searchParams.get("mine") === "true";
+  if (!category && mineOnly) {
     const prof = await sql`SELECT primary_category FROM provider_profiles WHERE user_id = ${auth.sub}`;
     category = prof[0]?.primary_category ?? null;
   }

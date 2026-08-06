@@ -7,6 +7,7 @@ import {
   presignPut,
   publicUrl,
   ALLOWED_IMAGE_TYPES,
+  ALLOWED_DOC_TYPES,
   MAX_UPLOAD_BYTES,
 } from "@/lib/r2";
 
@@ -18,7 +19,8 @@ export function OPTIONS() {
 
 /**
  * POST /api/uploads — mint a short-lived presigned URL for a direct-to-R2 upload.
- * Body: { kind?, mime, size } where `size` is the exact byte length of the image.
+ * Body: { kind?, mime, size } where `size` is the exact byte length of the file.
+ * `kind === "chat"` also accepts documents (pdf/doc/docx/txt); all other kinds are image-only.
  * Returns { key, uploadUrl, url } — the client PUTs exactly `size` bytes to `uploadUrl`
  * with header `Content-Type: <mime>`, then stores `url` (the public cdn.pocketjobs.co URL).
  *
@@ -36,17 +38,26 @@ export const POST = safe(async (req: NextRequest) => {
   } catch {
     return error("Invalid JSON body");
   }
+  const kind = body.kind ?? "other";
+  // Chat attachments may be an image OR a document; every other kind stays image-only.
+  const isChat = kind === "chat";
+  const allowed = isChat ? [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOC_TYPES] : ALLOWED_IMAGE_TYPES;
+
   const mime = body.mime;
   if (!mime) return error("mime is required");
-  if (!ALLOWED_IMAGE_TYPES.includes(mime)) return error("Unsupported image type");
+  if (!allowed.includes(mime)) {
+    return error(isChat ? "Unsupported file type" : "Unsupported image type");
+  }
 
   const size = body.size;
   if (typeof size !== "number" || !Number.isFinite(size) || size <= 0) {
     return error("size (byte length) is required");
   }
-  if (size > MAX_UPLOAD_BYTES) return error("Image too large (max 6MB)", 413);
+  if (size > MAX_UPLOAD_BYTES) {
+    return error(isChat ? "File too large (max 6MB)" : "Image too large (max 6MB)", 413);
+  }
 
-  const key = newKey(body.kind ?? "other", mime);
+  const key = newKey(kind, mime);
   const uploadUrl = await presignPut(key, mime, size);
   return json({ key, uploadUrl, url: publicUrl(key) }, { status: 201 });
 });

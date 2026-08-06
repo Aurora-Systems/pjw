@@ -19,7 +19,12 @@ export const GET = safe(async (req: NextRequest) => {
            CASE WHEN c.customer_id = $1 THEN pr.full_name ELSE cu.full_name END AS counterparty_name,
            CASE WHEN c.customer_id = $1 THEN pr.avatar_url ELSE cu.avatar_url END AS counterparty_avatar_url,
            CASE WHEN c.customer_id = $1 THEN c.provider_id ELSE c.customer_id END AS counterparty_id,
-           m.body AS last_message, m.created_at AS last_at
+           -- An attachment-only message has body = '', so preview it as a paperclip. The outer
+           -- CASE keeps a conversation with NO messages at all as a NULL preview (the LEFT JOIN
+           -- LATERAL yields a NULL body there too, which COALESCE alone would mislabel).
+           CASE WHEN m.created_at IS NULL THEN NULL
+                ELSE COALESCE(NULLIF(m.body, ''), '📎 Attachment') END AS last_message,
+           m.created_at AS last_at
     FROM conversations c
     JOIN users cu ON cu.id = c.customer_id
     JOIN users pr ON pr.id = c.provider_id
@@ -88,7 +93,7 @@ export const POST = safe(async (req: NextRequest) => {
       )
   `;
   if (related.length === 0) {
-    return error("You can only message someone you've booked or bid with.", 403);
+    return error("You can only message someone you've booked or made an offer with.", 403);
   }
 
   const rows = await sql`

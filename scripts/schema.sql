@@ -171,7 +171,10 @@ CREATE TABLE public.messages (
     sender_id uuid NOT NULL,
     body text NOT NULL,
     read_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    attachment_url text,
+    attachment_type text,
+    attachment_name text
 );
 
 

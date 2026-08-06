@@ -44,7 +44,7 @@ export default function JobBidsPage() {
       await load();
       setAccepting(null);
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Could not accept bid.");
+      setErr(e instanceof ApiError ? e.message : "Could not accept offer.");
       setAccepting(null);
     }
   };
@@ -61,7 +61,7 @@ export default function JobBidsPage() {
     <>
       <PageHeader
         title={job.title}
-        subtitle={`${bids.length} ${bids.length === 1 ? "bid" : "bids"} · budget $${job.budget_min ?? "?"}–${job.budget_max ?? "?"}`}
+        subtitle={`${bids.length} ${bids.length === 1 ? "offer" : "offers"} · budget $${job.budget_min ?? "?"}–${job.budget_max ?? "?"}`}
       />
 
       {multi && (
@@ -74,7 +74,7 @@ export default function JobBidsPage() {
               <div className="text-sm text-pj-slate-500">
                 {fullyStaffed
                   ? "This job is fully staffed."
-                  : `${slotsLeft} ${slotsLeft === 1 ? "slot" : "slots"} left — accept another bid to hire more.`}
+                  : `${slotsLeft} ${slotsLeft === 1 ? "slot" : "slots"} left — accept another offer to hire more.`}
               </div>
             </div>
             <div className="flex gap-1.5" aria-hidden="true">
@@ -92,7 +92,7 @@ export default function JobBidsPage() {
       {err && <p className="text-sm text-red-600 mb-4">{err}</p>}
 
       {bids.length === 0 ? (
-        <Empty>No bids yet — nearby pros are being notified. Check back shortly.</Empty>
+        <Empty>No offers yet — nearby pros are being notified. Check back shortly.</Empty>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {bids.map((b, i) => (
@@ -130,7 +130,7 @@ export default function JobBidsPage() {
                         ? "Fully staffed"
                         : multi
                           ? "Hire this provider"
-                          : "Accept bid"}
+                          : "Accept offer"}
                 </Button>
               )}
             </Card>

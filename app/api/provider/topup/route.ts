@@ -20,7 +20,10 @@ export function OPTIONS() {
 export const POST = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
-  if (auth.role !== "provider") return error("Providers only", 403);
+  // Gated on owning a provider profile, not the current role — a user in client mode still
+  // needs to be able to top up the balance they will spend when they switch back.
+  const profile = await sql`SELECT 1 FROM provider_profiles WHERE user_id = ${auth.sub}`;
+  if (profile.length === 0) return error("No wallet on this account", 403);
   if (!isPesepayConfigured()) {
     return error("Payments are not configured yet (missing Pesepay keys).", 503);
   }

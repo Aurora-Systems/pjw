@@ -16,7 +16,10 @@ export const GET = safe(async (req: NextRequest) => {
   const rows = await sql`
     SELECT u.id, u.phone, u.email, u.full_name, u.role, u.account_type, u.avatar_url, u.city,
            u.id_verified, u.phone_verified, u.client_rating, u.client_reviews_count,
-           COALESCE(p.onboarded, false) AS provider_onboarded
+           COALESCE(p.onboarded, false) AS provider_onboarded,
+           -- The provider_profiles row (and its balance) survives a switch to client mode, so the
+           -- wallet stays reachable in both modes. Role alone can't tell us that.
+           (p.user_id IS NOT NULL) AS has_wallet
     FROM users u
     LEFT JOIN provider_profiles p ON p.user_id = u.id
     WHERE u.id = ${auth.sub}

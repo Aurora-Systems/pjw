@@ -48,7 +48,7 @@ export default function WalletPage() {
         </p>
         {!positive && (
           <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3">
-            Your balance is {data.balance < 0 ? "negative" : "empty"}. Add funds to bid for and accept jobs.
+            Your balance is {data.balance < 0 ? "negative" : "empty"}. Add funds to make offers and accept jobs.
           </div>
         )}
       </Card>

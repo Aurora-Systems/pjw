@@ -42,13 +42,13 @@ export const POST = safe(async (
     JOIN users cu ON cu.id = j.customer_id
     WHERE b.id = ${id}
   `;
-  if (bidRows.length === 0) return error("Bid not found", 404);
+  if (bidRows.length === 0) return error("Offer not found", 404);
   const bid = bidRows[0];
   if (bid.customer_id !== auth.sub) return error("Not your job", 403);
 
   // The provider takes the job here, so they need a positive balance and pay the 10% commission.
   if (!(await canTakeWork(bid.provider_id))) {
-    return error("This provider is not currently accepting jobs. Please choose another bid.", 409);
+    return error("This provider is not currently accepting jobs. Please choose another offer.", 409);
   }
 
   // Accept the bid AND claim one slot in a single statement.
@@ -83,7 +83,7 @@ export const POST = safe(async (
 
   const bidTaken = Number(rows[0].bid_taken) > 0;
   if (!bidTaken) {
-    return error("That bid is no longer pending — it may already have been accepted.", 409);
+    return error("That offer is no longer pending — it may already have been accepted.", 409);
   }
   if (rows[0].hired_count === null) {
     // The bid flipped to 'accepted' but no slot was free (the job filled up, or was closed,
@@ -132,7 +132,7 @@ export const POST = safe(async (
   const bookingId = booking[0].id as string;
 
   // In-app + push, deep-linked to the shared job page.
-  await notify(bid.provider_id, "jobs", "Your bid was accepted", `You won the job: ${bid.job_title}`, {
+  await notify(bid.provider_id, "jobs", "Your offer was accepted", `You won the job: ${bid.job_title}`, {
     entity: "booking",
     id: bookingId,
   });
@@ -144,7 +144,7 @@ export const POST = safe(async (
     if (bid.provider_email) {
       await sendEmail(
         String(bid.provider_email),
-        `Your bid was accepted — ${bid.job_title}`,
+        `Your offer was accepted — ${bid.job_title}`,
         bidAcceptedEmail({
           providerName: String(bid.provider_name ?? "there"),
           customerName: String(bid.customer_name ?? "The client"),

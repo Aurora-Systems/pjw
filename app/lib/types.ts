@@ -12,6 +12,12 @@ export interface User {
   city: string | null;
   id_verified?: boolean;
   provider_onboarded?: boolean;
+  /**
+   * True when the account owns a provider_profiles row (and therefore a wallet balance).
+   * That row survives switching to client mode, so the wallet stays reachable in both modes —
+   * `role` alone can't tell you whether there is money to show.
+   */
+  has_wallet?: boolean;
   client_rating?: string | null;
   client_reviews_count?: number;
 }
@@ -385,4 +391,8 @@ export interface Message {
   body: string;
   read_at: string | null;
   created_at: string;
+  /** Public R2 URL of an attached image or document (null on plain text messages). */
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
 }

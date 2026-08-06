@@ -18,7 +18,7 @@ export const POST = safe(async (
 ) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
-  if (auth.role !== "provider") return error("Only providers can bid", 403);
+  if (auth.role !== "provider") return error("Only providers can make offers", 403);
 
   // Providers must be ID-verified (in-person cash jobs) AND have a positive balance.
   // Checked explicitly here so the provider gets the right reason to act on.
@@ -28,8 +28,8 @@ export const POST = safe(async (
     WHERE pp.user_id = ${auth.sub}
   `;
   if (elig.length === 0) return error("Finish setting up your provider profile first.", 403);
-  if (!elig[0].id_verified) return error("Verify your identity before bidding for jobs.", 403);
-  if (Number(elig[0].balance) <= 0) return error("Top up your PocketJobs balance to bid for jobs.", 402);
+  if (!elig[0].id_verified) return error("Verify your identity before making offers on jobs.", 403);
+  if (Number(elig[0].balance) <= 0) return error("Top up your PocketJobs balance to make offers on jobs.", 402);
 
   const { id } = await params;
   let body: { price?: number; start_text?: string; message?: string; boosted?: boolean };
@@ -42,7 +42,7 @@ export const POST = safe(async (
 
   const job = await sql`SELECT id, status, customer_id, title FROM jobs WHERE id = ${id}`;
   if (job.length === 0) return error("Job not found", 404);
-  if (job[0].status !== "open") return error("This job is no longer open for bids", 409);
+  if (job[0].status !== "open") return error("This job is no longer open for offers", 409);
 
   // Boosting a bid costs a fee from the wallet — but only the first time this bid
   // becomes boosted (re-submitting an already-boosted bid is free).
@@ -53,16 +53,16 @@ export const POST = safe(async (
   // upsert would rewrite the price on their ACCEPTED bid — diverging from the booking total and the
   // commission already charged at the old price.
   if (existing.length > 0 && existing[0].status !== "pending") {
-    return error("You're already hired on this job — your bid can't be changed.", 409);
+    return error("You're already hired on this job — your offer can't be changed.", 409);
   }
 
   const wantsBoost = body.boosted === true;
   const alreadyBoosted = existing.length > 0 && existing[0].boosted === true;
   if (wantsBoost && !alreadyBoosted) {
-    const charge = await chargeWallet(auth.sub, BOOST_BID_FEE, "boost", "Boosted bid");
+    const charge = await chargeWallet(auth.sub, BOOST_BID_FEE, "boost", "Boosted offer");
     if (!charge.ok) {
       return error(
-        `Not enough wallet balance to boost this bid ($${BOOST_BID_FEE.toFixed(2)}). Submit without boost or top up.`,
+        `Not enough wallet balance to boost this offer ($${BOOST_BID_FEE.toFixed(2)}). Send it without boost or top up.`,
         402
       );
     }
@@ -82,8 +82,8 @@ export const POST = safe(async (
     await notify(
       job[0].customer_id,
       "jobs",
-      "New bid on your job",
-      `You received a $${Number(body.price).toFixed(2)} bid on "${job[0].title}".`,
+      "New offer on your job",
+      `You received a $${Number(body.price).toFixed(2)} offer on "${job[0].title}".`,
       { entity: "job", id }
     );
   }

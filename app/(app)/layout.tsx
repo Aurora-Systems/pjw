@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { AuthProvider, useAuth } from "../lib/auth-context";
 import { getToken } from "../lib/api";
 import { Spinner } from "../components/ui";
+import OnboardingTour from "../components/OnboardingTour";
 import type { UserRole } from "../lib/types";
 
 const NAV: Record<UserRole, { href: string; label: string }[]> = {
@@ -22,7 +23,7 @@ const NAV: Record<UserRole, { href: string; label: string }[]> = {
   provider: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/work", label: "Find work" },
-    { href: "/my-bids", label: "My bids" },
+    { href: "/my-bids", label: "My offers" },
     { href: "/schedule", label: "Schedule" },
     { href: "/earnings", label: "Wallet" },
     { href: "/messages", label: "Messages" },
@@ -71,7 +72,14 @@ function Shell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const links = NAV[user.role];
+  // The wallet belongs to the person, not to the mode they are currently in: switching to client
+  // mode keeps the provider_profiles row and its balance, so a client who has ever been a provider
+  // must still be able to reach (and top up) their money. `has_wallet` is true whenever that row
+  // exists, regardless of the current role.
+  const links = [...NAV[user.role]];
+  if (user.has_wallet && !links.some((l) => l.href === "/earnings")) {
+    links.splice(Math.max(0, links.length - 1), 0, { href: "/earnings", label: "Wallet" });
+  }
 
   return (
     <div className="min-h-screen bg-pj-slate-50">
@@ -125,6 +133,8 @@ function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      {/* First-run walkthrough. Mounted here so it only appears once every gate above has passed. */}
+      <OnboardingTour role={user.role} />
     </div>
   );
 }

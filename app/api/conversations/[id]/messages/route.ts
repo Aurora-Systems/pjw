@@ -4,6 +4,7 @@ import { getAuth } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { notify } from "@/lib/notify";
 import { hasContactInfo } from "@/lib/moderation";
+import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -34,11 +35,15 @@ export const GET = safe(async (
   const after = req.nextUrl.searchParams.get("after");
   const messages = after
     ? await sql`
-        SELECT id, sender_id, body, read_at, created_at FROM messages
+        SELECT id, sender_id, body, read_at, created_at,
+               attachment_url, attachment_type, attachment_name
+        FROM messages
         WHERE conversation_id = ${id} AND created_at > ${after}
         ORDER BY created_at ASC`
     : await sql`
-        SELECT id, sender_id, body, read_at, created_at FROM messages
+        SELECT id, sender_id, body, read_at, created_at,
+               attachment_url, attachment_type, attachment_name
+        FROM messages
         WHERE conversation_id = ${id}
         ORDER BY created_at ASC`;
 
@@ -77,24 +82,44 @@ export const POST = safe(async (
   `;
   if (blocked.length > 0) return error("You can't message this user.", 403);
 
-  let body: { body?: string };
+  let body: {
+    body?: string;
+    attachment_url?: string;
+    attachment_type?: string;
+    attachment_name?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return error("Invalid JSON body");
   }
-  if (!body.body?.trim()) return error("Message body is required");
 
-  const text = body.body.trim();
-  const flagged = hasContactInfo(text); // off-platform contact attempt — flag for review
+  // An attachment-only message is allowed; body is NOT NULL so it falls back to ''.
+  const text = body.body?.trim() ?? "";
+  const attachmentUrl = body.attachment_url?.trim() || null;
+  if (!text && !attachmentUrl) return error("Message body or attachment is required");
+  // Only URLs we minted for our own R2 bucket may be stored — never arbitrary links.
+  if (attachmentUrl && !isOurUploadUrl(attachmentUrl)) return error("Invalid attachment URL");
+  const attachmentType = attachmentUrl ? body.attachment_type?.trim() || null : null;
+  const attachmentName = attachmentUrl ? body.attachment_name?.trim().slice(0, 200) || null : null;
+
+  const flagged = text ? hasContactInfo(text) : false; // off-platform contact attempt — flag for review
   const rows = await sql`
-    INSERT INTO messages (conversation_id, sender_id, body, flagged)
-    VALUES (${id}, ${auth.sub}, ${text}, ${flagged})
-    RETURNING id, sender_id, body, read_at, created_at, flagged
+    INSERT INTO messages (
+      conversation_id, sender_id, body, flagged,
+      attachment_url, attachment_type, attachment_name
+    )
+    VALUES (
+      ${id}, ${auth.sub}, ${text}, ${flagged},
+      ${attachmentUrl}, ${attachmentType}, ${attachmentName}
+    )
+    RETURNING id, sender_id, body, read_at, created_at, flagged,
+              attachment_url, attachment_type, attachment_name
   `;
 
   if (recipient) {
-    await notify(recipient, "messages", auth.name || "New message", text.slice(0, 120), {
+    const preview = text ? text.slice(0, 120) : attachmentName || "Sent an attachment";
+    await notify(recipient, "messages", auth.name || "New message", preview, {
       entity: "chat",
       id,
     });

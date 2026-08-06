@@ -36,7 +36,9 @@ export const POST = safe(async (req: NextRequest) => {
   const rows = await sql`
     SELECT u.id, u.phone, u.email, u.full_name, u.role, u.account_type, u.avatar_url, u.city,
            u.id_verified, u.phone_verified,
-           COALESCE(p.onboarded, false) AS provider_onboarded
+           COALESCE(p.onboarded, false) AS provider_onboarded,
+           -- Wallet follows the provider_profiles row, which survives role switches.
+           (p.user_id IS NOT NULL) AS has_wallet
     FROM users u
     LEFT JOIN provider_profiles p ON p.user_id = u.id
     WHERE u.id = ${auth.sub}

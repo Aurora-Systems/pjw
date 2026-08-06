@@ -17,7 +17,7 @@ function esc(s: string): string {
 }
 
 /**
- * "Your bid was accepted" — sent to the provider the moment a customer hires them.
+ * "Your offer was accepted" — sent to the provider the moment a customer hires them.
  * Links straight to the shared job page where both parties track the work.
  */
 export function bidAcceptedEmail(p: {
@@ -42,11 +42,11 @@ export function bidAcceptedEmail(p: {
     </div>
     <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px">
       <div style="display:inline-block;background:#EFF6FF;color:#2563EB;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;margin-bottom:16px">
-        BID ACCEPTED
+        OFFER ACCEPTED
       </div>
       <h1 style="margin:0 0 8px;font-size:24px;color:#0F172A">You got the job, ${esc(p.providerName.split(" ")[0])}!</h1>
       <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6">
-        ${esc(p.customerName)} accepted your bid for <strong>${esc(p.jobTitle)}</strong>.
+        ${esc(p.customerName)} accepted your offer for <strong>${esc(p.jobTitle)}</strong>.
       </p>
       <table style="width:100%;border-collapse:collapse;border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin-bottom:22px">
         ${row("Your price", `$${p.price}`)}

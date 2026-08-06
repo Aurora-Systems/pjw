@@ -19,9 +19,9 @@ export default function MyBidsPage() {
   if (loading) return <Loading />;
   return (
     <>
-      <PageHeader title="My bids" subtitle="Track the jobs you've bid on." />
+      <PageHeader title="My offers" subtitle="Track the jobs you've made an offer on." />
       {bids.length === 0 ? (
-        <Empty>No bids yet. Browse available jobs to get started.</Empty>
+        <Empty>No offers yet. Browse available jobs to get started.</Empty>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {bids.map((b) => (

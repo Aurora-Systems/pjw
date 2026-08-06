@@ -74,7 +74,7 @@ export default function PostJobPage() {
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Post a job" subtitle="Describe what you need — nearby pros will bid." />
+      <PageHeader title="Post a job" subtitle="Describe what you need — nearby pros will send offers." />
       <Card>
         <form onSubmit={submit} className="space-y-5">
           <Field label="Job title"><input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="Fix leaking kitchen tap" /></Field>
@@ -108,7 +108,7 @@ export default function PostJobPage() {
             <p className="mt-2 text-xs text-pj-slate-500">
               {workers === 1
                 ? "You'll hire one provider for this job."
-                : `You can hire up to ${workers} providers — the job keeps taking bids until all ${workers} slots are filled.`}
+                : `You can hire up to ${workers} providers — the job keeps taking offers until all ${workers} slots are filled.`}
             </p>
           </Field>
           <Field label="Where is the job? (helps providers find you)">
@@ -132,7 +132,7 @@ export default function PostJobPage() {
             </div>
           </div>
           <div className="rounded-xl bg-pj-blue-50 text-pj-slate-700 text-sm px-4 py-3">
-            ℹ️ Your job will be sent to up to 15 nearby pros. Expect first bids in ~10 minutes.
+            ℹ️ Your job will be sent to up to 15 nearby pros. Expect first offers in ~10 minutes.
           </div>
           {err && <p className="text-sm text-red-600">{err}</p>}
           <Button type="submit" className="w-full" disabled={busy}>{busy ? "Posting…" : "Post job"}</Button>

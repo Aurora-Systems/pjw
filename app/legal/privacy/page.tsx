@@ -198,7 +198,7 @@ const blocks: Block[] = [
     "Your saved addresses, saved/favourite providers, and blocked-user list",
     "Your notification preferences and stored notifications",
     "For providers: your portfolio images, listed services, availability/time-off, and public listing (you no longer appear in search results)",
-    "Your open job posts are closed and any pending bids are withdrawn",
+    "Your open job posts are closed and any pending offers are withdrawn",
   ] },
   { h3: "19.2 Anonymised" },
   { ul: [

@@ -58,7 +58,7 @@ function CustomerHome({ name }: { name: string }) {
         <Card onClick={() => (window.location.href = "/post-job")} className="flex items-center justify-between">
           <div>
             <div className="font-bold text-pj-slate-900">Post a job</div>
-            <div className="text-sm text-pj-slate-500">Describe it and compare bids</div>
+            <div className="text-sm text-pj-slate-500">Describe it and compare offers</div>
           </div>
           <span className="text-pj-blue-600 text-2xl">→</span>
         </Card>
@@ -114,11 +114,11 @@ function ProviderHome() {
   if (!data) return <Loading />;
   return (
     <>
-      <PageHeader title="Provider dashboard" subtitle="Your jobs, bids and earnings at a glance." action={<Button href="/work">Find work</Button>} />
+      <PageHeader title="Provider dashboard" subtitle="Your jobs, offers and earnings at a glance." action={<Button href="/work">Find work</Button>} />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <Stat value={`$${data.week_earnings}`} label="This week" />
         <Stat value={data.active} label="Active jobs" />
-        <Stat value={data.bids_out} label="Bids out" />
+        <Stat value={data.bids_out} label="Offers out" />
         <Stat value={data.profile?.rating ?? "—"} label="Rating" />
       </div>
       <div className="flex items-center justify-between mb-3">
@@ -268,7 +268,7 @@ function AdminHome() {
           tone={m.open_disputes ? "warn" : "good"}
         />
         <StatTile
-          label="Open jobs, no bids"
+          label="Open jobs, no offers"
           value={m.open_jobs_without_bids}
           sub="Unmet demand"
           tone={m.open_jobs_without_bids ? "warn" : "good"}
@@ -326,7 +326,7 @@ function AdminHome() {
       {/* Marketplace health */}
       <h2 className="text-lg font-bold text-pj-slate-900 mb-3">Marketplace health</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatTile label="Total bids" value={compact(m.total_bids)} sub={`${m.avg_bids_per_job} avg per job`} />
+        <StatTile label="Total offers" value={compact(m.total_bids)} sub={`${m.avg_bids_per_job} avg per job`} />
         <StatTile
           label="Verified providers"
           value={`${m.verified_providers}/${m.providers}`}

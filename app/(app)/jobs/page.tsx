@@ -19,7 +19,7 @@ export default function JobsPage() {
   }, []);
 
   const cancelJob = async (id: string) => {
-    if (!window.confirm("Cancel this job? Providers will no longer be able to bid.")) return;
+    if (!window.confirm("Cancel this job? Providers will no longer be able to make offers.")) return;
     try {
       await api.cancelJob(id);
       setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "cancelled" } : j)));
@@ -31,7 +31,7 @@ export default function JobsPage() {
   if (loading) return <Loading />;
   return (
     <>
-      <PageHeader title="My jobs" subtitle="Track posts and review bids." action={<Button href="/post-job">Post a job</Button>} />
+      <PageHeader title="My jobs" subtitle="Track posts and review offers." action={<Button href="/post-job">Post a job</Button>} />
       {jobs.length === 0 ? (
         <Empty>You haven&apos;t posted any jobs yet.</Empty>
       ) : (
@@ -49,7 +49,7 @@ export default function JobsPage() {
                   <Badge color={j.status === "open" ? "blue" : j.status === "assigned" ? "amber" : "slate"}>{j.status}</Badge>
                 </div>
                 <div className="text-sm text-pj-slate-500 mt-3">
-                  {j.bid_count ?? 0} {j.bid_count === 1 ? "bid" : "bids"}
+                  {j.bid_count ?? 0} {j.bid_count === 1 ? "offer" : "offers"}
                   {(j.workers_needed ?? 1) > 1 && ` · hired ${j.hired_count ?? 0} of ${j.workers_needed}`} →
                 </div>
               </Link>

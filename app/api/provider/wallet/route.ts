@@ -11,14 +11,20 @@ export function OPTIONS() {
 }
 
 /**
- * GET /api/provider/wallet — the provider's balance, top-up packages, the commission
+ * GET /api/provider/wallet — the wallet balance, top-up packages, the commission
  * rate, and recent wallet transactions (top-ups + commissions). Replaces the old
  * earnings/payout view (there are no payouts in this model).
+ *
+ * Gated on OWNING A PROVIDER PROFILE rather than on the current role. Switching to
+ * client mode keeps the provider_profiles row (see /api/account/become-customer), so a
+ * user who has ever been a provider still has a real balance — hiding their wallet just
+ * because they are currently acting as a client loses money they have already topped up.
  */
 export const GET = safe(async (req: NextRequest) => {
   const auth = await getAuth(req);
   if (!auth) return error("Unauthorized", 401);
-  if (auth.role !== "provider") return error("Providers only", 403);
+  const profile = await sql`SELECT 1 FROM provider_profiles WHERE user_id = ${auth.sub}`;
+  if (profile.length === 0) return error("No wallet on this account", 403);
 
   const balance = await getBalance(auth.sub);
   const transactions = await sql`
