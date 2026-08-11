@@ -160,4 +160,13 @@ New tables vs. earlier: `workforce_requests`, `disputes`, and `users.auth_id`/`c
 - The **mobile** app lives at `/Users/macbook/work/aurora/pocket-jobs` (Ionic React). It is the primary
   consumer of these API routes. Keep the two repos' CLAUDE.md/MEMORY.md cross-references consistent.
 - Web marketing auth pages are still **UI-only placeholders** (not yet wired to the API above).
-- No dark mode — the marketing site uses a clean white/blue theme.
+- **Dark mode is signed-in-app only.** The marketing site stays deliberately white/blue. Dark is
+  keyed off `data-pj-theme="dark"` on `<html>`, set by `ThemeProvider` (`app/lib/theme.tsx`) which
+  mounts in `app/(app)/layout.tsx` **only** and clears the attribute on unmount. A no-flash inline
+  script in the root layout applies it before paint, gated on an app-route path list — keep that
+  list in sync when adding a top-level authenticated route.
+  Because `globals.css` uses `@theme inline`, `bg-pj-slate-50` compiles to `var(--pj-slate-50)`, so
+  the dark block just **redefines the `--pj-*` ramp** and every utility flips — do not add `dark:`
+  variants. Note the slate ramp **inverts** in dark (900 = lightest ink, 50 = darkest surface), so
+  read tokens by role, not by number. Literals Tailwind owns (`bg-white`, emerald/amber/red tints)
+  and blue-as-text get explicit scoped overrides at the bottom of `globals.css`.

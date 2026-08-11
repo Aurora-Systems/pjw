@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { THEME_INIT_SCRIPT } from "./lib/theme";
 
 // Poppins is self-hosted by next/font at build time (downloaded once, then served from our
 // own origin), so there's no runtime dependency on Google Fonts.
@@ -51,7 +52,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full`}>
+    // suppressHydrationWarning: the script below sets data-pj-theme on <html> before React
+    // hydrates, so the server and client markup legitimately differ on that attribute.
+    <html lang="en" className={`${poppins.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col font-sans antialiased">
         {children}
       </body>

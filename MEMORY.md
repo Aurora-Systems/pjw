@@ -26,7 +26,10 @@ Pocket Jobs is a **freelance job marketplace platform** that connects businesses
 ### Architecture Decisions
 - **Next.js App Router** chosen for SEO benefits (SSR/SSG) on marketing pages
 - **Tailwind CSS 4** for rapid, consistent styling
-- **No dark mode** on marketing site (clean white brand identity)
+- **Dark mode: signed-in app only.** Marketing keeps the clean white brand identity. Light/Dark/System,
+  system-following by default, remembered per device. Web: `data-pj-theme` on `<html>` + redefined
+  `--pj-*` ramp (see CLAUDE.md). Mobile: Ionic 8 `.ion-palette-dark` + semantic tokens in
+  `theme/variables.css`.
 - **Neon PostgreSQL** selected as database (serverless, auto-scaling)
 - **Auth pages are UI-only** — backend auth will be added later (likely NextAuth.js)
 

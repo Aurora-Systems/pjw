@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from "../lib/auth-context";
 import { getToken } from "../lib/api";
 import { Spinner } from "../components/ui";
 import OnboardingTour from "../components/OnboardingTour";
+import ThemeToggle from "../components/ThemeToggle";
+import { ThemeProvider } from "../lib/theme";
 import type { UserRole } from "../lib/types";
 
 const NAV: Record<UserRole, { href: string; label: string }[]> = {
@@ -108,6 +110,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle className="hidden sm:inline-flex" />
             <div className="text-right hidden sm:block">
               <div className="text-sm font-semibold text-pj-slate-900 leading-tight">{user.full_name}</div>
               <div className="text-xs text-pj-slate-400 capitalize">{user.role}</div>
@@ -130,6 +133,8 @@ function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {/* The header row has no space for the theme control on small screens. */}
+          <ThemeToggle className="ml-auto shrink-0" />
         </nav>
       </header>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
@@ -141,8 +146,12 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <Shell>{children}</Shell>
-    </AuthProvider>
+    // ThemeProvider lives here rather than in the root layout so dark mode applies to the
+    // signed-in app only — the marketing site stays deliberately light.
+    <ThemeProvider>
+      <AuthProvider>
+        <Shell>{children}</Shell>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

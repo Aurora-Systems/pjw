@@ -31,6 +31,62 @@
 
   --background: #FFFFFF;
   --foreground: #0F172A;
+
+  /* Semantic surface used by the signed-in app. In light it is plain white; the dark
+     block below repoints it, which is why app chrome says bg-pj-surface, not bg-white. */
+  --pj-surface: #FFFFFF;
+  --pj-surface-raised: #FFFFFF;
+}
+
+/* ───────────────────────────────────────────
+   Dark theme — signed-in app only
+
+   Scoped to [data-pj-theme="dark"] on <html>, which ThemeProvider only sets while an
+   authenticated route is mounted. The public marketing pages therefore keep their
+   deliberate white/blue identity.
+
+   The whole palette flips from here because the @theme block above is `inline`:
+   Tailwind compiles `bg-pj-slate-50` to `background-color: var(--pj-slate-50)`, so
+   redefining the ramp re-colours every pj-* utility at runtime with no class changes.
+
+   NOTE the slate ramp inverts. In light, 50 is the palest surface and 900 the darkest
+   ink; in dark those roles swap, so 900 becomes the lightest value. Read each token by
+   the job it does (900 = primary text) rather than by its number.
+   ─────────────────────────────────────────── */
+[data-pj-theme="dark"] {
+  color-scheme: dark;
+
+  --pj-slate-50: #0B1220;   /* page background   (was palest) */
+  --pj-slate-100: #141D30;  /* subtle raised fill              */
+  --pj-slate-200: #24304A;  /* hairline borders                */
+  --pj-slate-300: #35435F;  /* stronger borders                */
+  --pj-slate-400: #7C8CA8;  /* placeholders, faint meta        */
+  --pj-slate-500: #9BADC9;  /* secondary text                  */
+  --pj-slate-600: #B6C5DD;
+  --pj-slate-700: #CCD8EA;
+  --pj-slate-800: #E3EBF7;
+  --pj-slate-900: #F2F7FD;  /* primary text      (was darkest) */
+
+  /* Pale blue tints are used as chip/section fills, so they must go dark. The mid and
+     strong blues stay saturated: they back primary buttons that carry white text, and
+     lightening them would drop that contrast below AA. Blue *text* is handled by the
+     scoped overrides further down instead. */
+  --pj-blue-50: #16243D;
+  --pj-blue-100: #1C3054;
+  --pj-blue-200: #26406C;
+  --pj-blue-300: #2F5896;
+  --pj-blue-400: #4C93F7;
+  --pj-blue-500: #3B82F6;
+  --pj-blue-600: #2563EB;
+  --pj-blue-700: #1D4ED8;
+  --pj-blue-800: #1E40AF;
+  --pj-blue-900: #1E3A8A;
+
+  --background: #0B1220;
+  --foreground: #F2F7FD;
+
+  --pj-surface: #161F33;
+  --pj-surface-raised: #1D2740;
 }
 
 @theme inline {
@@ -210,3 +266,56 @@ body {
 .stagger-6 { transition-delay: 0.6s; }
 .stagger-7 { transition-delay: 0.7s; }
 .stagger-8 { transition-delay: 0.8s; }
+
+/* ───────────────────────────────────────────
+   Dark theme — literal colours that the token ramp can't reach
+
+   Everything styled with a pj-* utility flips automatically via the variables above.
+   These rules cover the remainder: Tailwind's built-in literals (white, emerald, amber,
+   red) and the handful of blues whose *text* role needs a lighter value than their
+   *background* role. All of it is scoped to the dark app subtree, so the marketing
+   pages — which use the same literals on purpose — are untouched.
+   ─────────────────────────────────────────── */
+[data-pj-theme="dark"] .bg-white { background-color: var(--pj-surface); }
+[data-pj-theme="dark"] .border-white { border-color: var(--pj-surface); }
+
+/* Blue as ink needs to lift off a dark ground; blue as a button fill must not (see note
+   in the palette block above). Splitting them here keeps both readable. */
+[data-pj-theme="dark"] .text-pj-blue-600 { color: #6FA8FF; }
+[data-pj-theme="dark"] .text-pj-blue-700 { color: #93C5FD; }
+[data-pj-theme="dark"] .text-pj-blue-800 { color: #BFDBFE; }
+
+/* Status colours: tinted fill + darker ink in light becomes deep fill + light ink here,
+   preserving the semantic (green = good, amber = attention, red = problem). */
+[data-pj-theme="dark"] .bg-emerald-50 { background-color: #062B21; }
+[data-pj-theme="dark"] .bg-emerald-100 { background-color: #0A3C2E; }
+[data-pj-theme="dark"] .text-emerald-600 { color: #34D399; }
+[data-pj-theme="dark"] .text-emerald-700 { color: #6EE7B7; }
+
+[data-pj-theme="dark"] .bg-amber-50 { background-color: #33240A; }
+[data-pj-theme="dark"] .bg-amber-100 { background-color: #45300D; }
+[data-pj-theme="dark"] .text-amber-600 { color: #FBBF24; }
+[data-pj-theme="dark"] .text-amber-700 { color: #FCD34D; }
+[data-pj-theme="dark"] .text-amber-800 { color: #FDE68A; }
+[data-pj-theme="dark"] .border-amber-200 { border-color: #5A3F12; }
+
+[data-pj-theme="dark"] .bg-red-50 { background-color: #3A1113; }
+[data-pj-theme="dark"] .text-red-600 { color: #F87171; }
+[data-pj-theme="dark"] .text-red-700 { color: #FCA5A5; }
+
+/* The marketing glass nav is white-tinted; inside the app it would glow. */
+[data-pj-theme="dark"] .glass-solid {
+  background: rgba(22, 31, 51, 0.97);
+}
+
+/* Shadows read as haze on a dark ground — deepen them instead of tinting the surface. */
+[data-pj-theme="dark"] .shadow-sm,
+[data-pj-theme="dark"] .shadow-md,
+[data-pj-theme="dark"] .shadow-lg,
+[data-pj-theme="dark"] .shadow-xl,
+[data-pj-theme="dark"] .shadow-2xl {
+  --tw-shadow-color: rgba(0, 0, 0, 0.55);
+}
+
+/* Keep the themed surface behind overscroll/rubber-banding, not the light body. */
+[data-pj-theme="dark"] body { background: var(--background); color: var(--foreground); }
