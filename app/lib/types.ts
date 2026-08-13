@@ -347,6 +347,49 @@ export interface AdminMetrics {
   avg_bids_per_job: number;
   open_jobs_without_bids: number;
 
+  // Marketplace health — does a posted job actually become work?
+  fill_rate_pct: number; // share of jobs that reached a hire
+  offer_rate_pct: number; // share of jobs that got at least one offer
+  jobs_no_offers: number;
+  median_mins_to_first_offer: number;
+  median_mins_to_hire: number;
+
+  /** Provider activation. Each stage is a subset of the one above it. */
+  funnel: {
+    signed_up: number;
+    onboarded: number;
+    permitted: number; // cleared to work
+    funded: number; // holds wallet credit — required before making an offer
+    made_offer: number;
+    worked: number;
+  };
+
+  // The operational queue — things quietly rotting that need a human today.
+  stale_jobs_no_offers: number; // open >48h with nothing on them
+  completed_unpaid: number; // finished work the provider hasn't confirmed payment for
+  bookings_in_flight: number;
+  jobs_missing_category: number;
+  oldest_open_dispute_hrs: number;
+
+  /** Last 7 days against the 7 before, so direction is visible, not just totals. */
+  growth: {
+    signups: { now: number; prev: number };
+    jobs: { now: number; prev: number };
+    gmv: { now: number; prev: number };
+  };
+  repeat_customers: number;
+  customers_who_posted: number;
+  repeat_rate_pct: number;
+
+  /** Per trade, ordered by unanswered demand — the top row is where to recruit. */
+  supply_demand: {
+    trade: string;
+    jobs: number;
+    unanswered: number;
+    providers: number;
+    can_take_work: number; // providers with credit; the rest cannot make an offer
+  }[];
+
   // Quality
   total_reviews: number;
   avg_rating: number;

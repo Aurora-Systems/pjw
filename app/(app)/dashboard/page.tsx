@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
 import { Card, Stat, PageHeader, Badge, Loading, Empty, Avatar } from "../../components/ui";
-import { TrendChart, BarBreakdown, StatTile, compact } from "../../components/charts";
+import { TrendChart, BarBreakdown, StatTile, Funnel, Delta, compact } from "../../components/charts";
 import Button from "../../components/Button";
 import type {
   Booking,
@@ -188,6 +188,18 @@ function CorporateHome({ name }: { name: string }) {
 }
 
 /* ---------------- Admin ---------------- */
+/** Minutes → a duration a person can read at a glance ("6 min", "3h 20m", "2d"). */
+function fmtMins(mins: number): string {
+  if (mins < 60) return `${Math.max(1, Math.round(mins))} min`;
+  const h = mins / 60;
+  if (h < 24) {
+    const whole = Math.floor(h);
+    const rem = Math.round(mins - whole * 60);
+    return rem ? `${whole}h ${rem}m` : `${whole}h`;
+  }
+  return `${Math.round(h / 24)}d`;
+}
+
 function AdminHome() {
   const [m, setM] = useState<AdminMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -233,6 +245,66 @@ function AdminHome() {
         />
       </div>
 
+      {/* Is the marketplace actually working? Volume alone hides a dead marketplace:
+          a healthy job count means nothing if most posts never get an offer. */}
+      <h2 className="text-lg font-bold text-pj-slate-900 mb-1">Marketplace health</h2>
+      <p className="text-sm text-pj-slate-500 mb-3">
+        Whether a posted job turns into real work — and how fast.
+      </p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatTile
+          label="Fill rate"
+          value={`${m.fill_rate_pct}%`}
+          sub={`${m.completed_bookings + m.active_bookings} of ${m.total_jobs} jobs reached a hire`}
+          tone={m.fill_rate_pct >= 60 ? "good" : m.fill_rate_pct >= 30 ? "warn" : "warn"}
+        />
+        <StatTile
+          label="Jobs getting offers"
+          value={`${m.offer_rate_pct}%`}
+          sub={`${m.jobs_no_offers} never got a single offer`}
+          tone={m.offer_rate_pct >= 70 ? "good" : "warn"}
+        />
+        <StatTile
+          label="Time to first offer"
+          value={m.median_mins_to_first_offer ? `${fmtMins(m.median_mins_to_first_offer)}` : "—"}
+          sub="Median, when an offer comes"
+          tone={m.median_mins_to_first_offer && m.median_mins_to_first_offer <= 60 ? "good" : "default"}
+        />
+        <StatTile
+          label="Time to hire"
+          value={m.median_mins_to_hire ? `${fmtMins(m.median_mins_to_hire)}` : "—"}
+          sub="Median, post → booked"
+          tone={m.median_mins_to_hire && m.median_mins_to_hire <= 240 ? "good" : "default"}
+        />
+      </div>
+
+      {/* Direction of travel. Totals can look fine while the trend has fallen off a cliff. */}
+      <h2 className="text-lg font-bold text-pj-slate-900 mb-1">This week vs last</h2>
+      <p className="text-sm text-pj-slate-500 mb-3">Last 7 days compared with the 7 before.</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatTile
+          label="Signups"
+          value={compact(m.growth.signups.now)}
+          sub={<Delta now={m.growth.signups.now} prev={m.growth.signups.prev} />}
+        />
+        <StatTile
+          label="Jobs posted"
+          value={compact(m.growth.jobs.now)}
+          sub={<Delta now={m.growth.jobs.now} prev={m.growth.jobs.prev} />}
+        />
+        <StatTile
+          label="Cash volume"
+          value={money(m.growth.gmv.now)}
+          sub={<Delta now={m.growth.gmv.now} prev={m.growth.gmv.prev} />}
+        />
+        <StatTile
+          label="Repeat customers"
+          value={`${m.repeat_rate_pct}%`}
+          sub={`${m.repeat_customers} of ${m.customers_who_posted} posted more than once`}
+          tone={m.repeat_rate_pct >= 30 ? "good" : "default"}
+        />
+      </div>
+
       {/* Money — jobs settle in cash off-platform, so revenue is top-ups + commission */}
       <h2 className="text-lg font-bold text-pj-slate-900 mb-3">Revenue</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -273,6 +345,94 @@ function AdminHome() {
           sub="Unmet demand"
           tone={m.open_jobs_without_bids ? "warn" : "good"}
         />
+        <StatTile
+          label="Stale jobs"
+          value={m.stale_jobs_no_offers}
+          sub="Open >48h with no offers"
+          tone={m.stale_jobs_no_offers ? "warn" : "good"}
+        />
+        <StatTile
+          label="Done, unpaid"
+          value={m.completed_unpaid}
+          sub="Provider hasn't confirmed cash"
+          tone={m.completed_unpaid ? "warn" : "good"}
+        />
+        <StatTile
+          label="Jobs in flight"
+          value={m.bookings_in_flight}
+          sub="Confirmed → in progress"
+        />
+      </div>
+
+      {/* The single most useful view on this page: signing up is not the same as being
+          able to work. Highlighting the biggest drop-off turns a wall of numbers into
+          one clear thing to fix. */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <h2 className="font-bold text-pj-slate-900">Provider activation</h2>
+          <p className="text-sm text-pj-slate-500 mb-5">
+            A provider must finish onboarding, be cleared to work and hold wallet credit
+            before they can make a single offer.
+          </p>
+          <Funnel
+            stages={[
+              { label: "Signed up", value: m.funnel.signed_up },
+              { label: "Onboarded", value: m.funnel.onboarded, note: "picked a trade & services" },
+              { label: "Cleared", value: m.funnel.permitted, note: "permitted to work" },
+              { label: "Funded", value: m.funnel.funded, note: "has credit to make offers" },
+              { label: "Made an offer", value: m.funnel.made_offer },
+              { label: "Worked", value: m.funnel.worked },
+            ]}
+          />
+        </Card>
+
+        <Card>
+          <h2 className="font-bold text-pj-slate-900">Supply vs demand</h2>
+          <p className="text-sm text-pj-slate-500 mb-5">
+            Ordered by unanswered demand. &ldquo;Can work&rdquo; counts only providers holding
+            credit — the rest cannot make an offer.
+          </p>
+          {m.supply_demand.length === 0 ? (
+            <Empty>No jobs posted yet.</Empty>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-semibold text-pj-slate-400">
+                    <th className="pb-2 font-semibold">Trade</th>
+                    <th className="pb-2 text-right font-semibold">Jobs</th>
+                    <th className="pb-2 text-right font-semibold">Unanswered</th>
+                    <th className="pb-2 text-right font-semibold">Providers</th>
+                    <th className="pb-2 text-right font-semibold">Can work</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.supply_demand.map((r) => (
+                    <tr key={r.trade} className="border-t border-pj-slate-100">
+                      <td className="py-2 capitalize text-pj-slate-700">{r.trade.replace(/-/g, " ")}</td>
+                      <td className="py-2 text-right tabular-nums text-pj-slate-900">{r.jobs}</td>
+                      <td
+                        className={`py-2 text-right tabular-nums font-semibold ${
+                          r.unanswered > 0 ? "text-amber-700" : "text-pj-slate-400"
+                        }`}
+                      >
+                        {r.unanswered}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-pj-slate-500">{r.providers}</td>
+                      <td
+                        className={`py-2 text-right tabular-nums font-semibold ${
+                          r.can_take_work === 0 ? "text-red-600" : "text-pj-slate-900"
+                        }`}
+                      >
+                        {r.can_take_work}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       </div>
 
       {/* Trends */}

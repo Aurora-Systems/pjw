@@ -10,6 +10,8 @@ export function OPTIONS() {
 }
 
 const num = (v: unknown) => Number(v ?? 0);
+/** Whole-number percentage, guarding the empty-platform case where the divisor is 0. */
+const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
 
 /**
  * GET /api/admin/metrics — live platform metrics for the admin dashboard.
@@ -54,6 +56,11 @@ export const GET = safe(async (req: NextRequest) => {
     jobsSeries,
     topCategories,
     recentUsers,
+    health,
+    funnel,
+    attention,
+    growth,
+    supplyDemand,
   ] = await Promise.all([
     sql`
       WITH b AS (
@@ -195,11 +202,132 @@ export const GET = safe(async (req: NextRequest) => {
       ORDER BY created_at DESC
       LIMIT 8
     `,
+
+    // ── Marketplace health ──────────────────────────────────────────────
+    // Does a posted job actually turn into work? Counts alone hide this: a healthy-looking
+    // job total means nothing if most posts never receive an offer. Medians (not averages)
+    // because a single stale job would drag a mean into uselessness.
+    sql`
+      WITH j AS (
+        SELECT j.id, j.status, j.created_at,
+               (SELECT COUNT(*) FROM bids b WHERE b.job_id = j.id) AS offers,
+               (SELECT MIN(b.created_at) FROM bids b WHERE b.job_id = j.id) AS first_offer_at,
+               (SELECT MIN(bk.created_at) FROM bookings bk WHERE bk.job_id = j.id) AS first_hire_at
+        FROM jobs j
+      )
+      SELECT
+        COUNT(*)::int                                                        AS jobs_total,
+        COUNT(*) FILTER (WHERE offers = 0)::int                              AS jobs_no_offers,
+        COUNT(*) FILTER (WHERE offers > 0)::int                              AS jobs_with_offers,
+        COUNT(*) FILTER (WHERE first_hire_at IS NOT NULL)::int               AS jobs_filled,
+        COALESCE(EXTRACT(epoch FROM percentile_cont(0.5) WITHIN GROUP (
+          ORDER BY first_offer_at - created_at)) / 60.0, 0)::float           AS median_mins_to_first_offer,
+        COALESCE(EXTRACT(epoch FROM percentile_cont(0.5) WITHIN GROUP (
+          ORDER BY first_hire_at - created_at)) / 60.0, 0)::float            AS median_mins_to_hire
+      FROM j
+    `,
+
+    // ── Provider activation funnel ──────────────────────────────────────
+    // Signing up is not the same as being able to work. A provider must finish onboarding,
+    // be permitted to work, AND hold wallet credit before they can make a single offer, so
+    // the drop-off between these stages is where supply is actually lost.
+    sql`
+      SELECT
+        COUNT(*)::int                                            AS signed_up,
+        COUNT(*) FILTER (WHERE pp.onboarded)::int                AS onboarded,
+        COUNT(*) FILTER (WHERE u.id_verified)::int               AS permitted,
+        COUNT(*) FILTER (WHERE pp.balance > 0)::int              AS funded,
+        (SELECT COUNT(DISTINCT provider_id) FROM bids)::int      AS made_offer,
+        (SELECT COUNT(DISTINCT provider_id) FROM bookings)::int  AS worked
+      FROM provider_profiles pp
+      JOIN users u ON u.id = pp.user_id
+      WHERE u.deleted_at IS NULL
+    `,
+
+    // ── Needs attention now ─────────────────────────────────────────────
+    // The operational queue: things silently rotting that a manager should chase today.
+    sql`
+      SELECT
+        (SELECT COUNT(*) FROM jobs
+          WHERE status = 'open'
+            AND created_at < now() - interval '48 hours'
+            AND NOT EXISTS (SELECT 1 FROM bids b WHERE b.job_id = jobs.id))::int AS stale_jobs_no_offers,
+        -- Completed work the provider has not confirmed being paid for. Only they can
+        -- confirm (cash settles off-platform), so these can sit unnoticed forever.
+        (SELECT COUNT(*) FROM bookings
+          WHERE status = 'completed' AND payment_status IS DISTINCT FROM 'paid')::int AS completed_unpaid,
+        (SELECT COUNT(*) FROM bookings
+          WHERE status NOT IN ('completed','cancelled'))::int                    AS bookings_in_flight,
+        (SELECT COUNT(*) FROM jobs
+          WHERE status = 'open' AND COALESCE(NULLIF(category, ''), NULL) IS NULL)::int AS jobs_missing_category,
+        -- Age of the oldest thing waiting on a human, in hours.
+        COALESCE((SELECT EXTRACT(epoch FROM now() - MIN(created_at)) / 3600.0
+                  FROM disputes WHERE status = 'open'), 0)::float               AS oldest_open_dispute_hrs
+    `,
+
+    // ── Growth: this 7 days vs the 7 before ─────────────────────────────
+    // A raw total can't tell you whether things are speeding up or falling off a cliff.
+    sql`
+      SELECT
+        (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL
+           AND created_at >= now() - interval '7 days')::int                     AS signups_7d,
+        (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL
+           AND created_at >= now() - interval '14 days'
+           AND created_at <  now() - interval '7 days')::int                     AS signups_prev_7d,
+        (SELECT COUNT(*) FROM jobs
+           WHERE created_at >= now() - interval '7 days')::int                   AS jobs_7d,
+        (SELECT COUNT(*) FROM jobs
+           WHERE created_at >= now() - interval '14 days'
+             AND created_at <  now() - interval '7 days')::int                   AS jobs_prev_7d,
+        (SELECT COALESCE(SUM(total), 0) FROM bookings
+           WHERE status = 'completed' AND created_at >= now() - interval '7 days')::float   AS gmv_7d,
+        (SELECT COALESCE(SUM(total), 0) FROM bookings
+           WHERE status = 'completed' AND created_at >= now() - interval '14 days'
+             AND created_at <  now() - interval '7 days')::float                 AS gmv_prev_7d,
+        -- Demand that comes back is the strongest signal the product works.
+        (SELECT COUNT(*) FROM (
+           SELECT customer_id FROM jobs GROUP BY customer_id HAVING COUNT(*) > 1) x)::int   AS repeat_customers,
+        (SELECT COUNT(DISTINCT customer_id) FROM jobs)::int                      AS customers_who_posted
+    `,
+
+    // ── Supply vs demand, per trade ─────────────────────────────────────
+    // Ordered by unanswered demand: the top row is where to recruit next. `can_take_work`
+    // is the honest supply number — a provider with no wallet credit cannot make an offer.
+    sql`
+      WITH demand AS (
+        SELECT COALESCE(NULLIF(category, ''), 'Uncategorised') AS trade,
+               COUNT(*)::int AS jobs,
+               COUNT(*) FILTER (
+                 WHERE NOT EXISTS (SELECT 1 FROM bids b WHERE b.job_id = j.id))::int AS unanswered
+        FROM jobs j GROUP BY 1
+      ),
+      supply AS (
+        SELECT COALESCE(NULLIF(pp.primary_category, ''), 'Uncategorised') AS trade,
+               COUNT(*)::int AS providers,
+               COUNT(*) FILTER (WHERE pp.balance > 0)::int AS can_take_work
+        FROM provider_profiles pp
+        JOIN users u ON u.id = pp.user_id
+        WHERE u.deleted_at IS NULL
+        GROUP BY 1
+      )
+      SELECT d.trade,
+             d.jobs, d.unanswered,
+             COALESCE(s.providers, 0)::int      AS providers,
+             COALESCE(s.can_take_work, 0)::int  AS can_take_work
+      FROM demand d
+      LEFT JOIN supply s ON s.trade = d.trade
+      ORDER BY d.unanswered DESC, d.jobs DESC
+      LIMIT 8
+    `,
   ]);
 
   const u = users[0];
   const j = jobs[0];
   const b = bookings[0];
+  const h = health[0];
+  const f = funnel[0];
+  const a = attention[0];
+  const g = growth[0];
   const totalJobs = num(j.total);
   const totalBids = num(liquidity[0].total_bids);
 
@@ -250,6 +378,50 @@ export const GET = safe(async (req: NextRequest) => {
     // ── Quality ──
     total_reviews: num(reviews[0].total),
     avg_rating: num(reviews[0].avg_rating),
+
+    // ── Marketplace health ──
+    // pct_* are shares of all jobs ever posted; the medians are in minutes.
+    fill_rate_pct: pct(num(h.jobs_filled), num(h.jobs_total)),
+    offer_rate_pct: pct(num(h.jobs_with_offers), num(h.jobs_total)),
+    jobs_no_offers: num(h.jobs_no_offers),
+    median_mins_to_first_offer: Math.round(num(h.median_mins_to_first_offer)),
+    median_mins_to_hire: Math.round(num(h.median_mins_to_hire)),
+
+    // ── Provider activation funnel (each stage is a subset of the one before) ──
+    funnel: {
+      signed_up: num(f.signed_up),
+      onboarded: num(f.onboarded),
+      permitted: num(f.permitted),
+      funded: num(f.funded),
+      made_offer: num(f.made_offer),
+      worked: num(f.worked),
+    },
+
+    // ── Needs attention now ──
+    stale_jobs_no_offers: num(a.stale_jobs_no_offers),
+    completed_unpaid: num(a.completed_unpaid),
+    bookings_in_flight: num(a.bookings_in_flight),
+    jobs_missing_category: num(a.jobs_missing_category),
+    oldest_open_dispute_hrs: Math.round(num(a.oldest_open_dispute_hrs)),
+
+    // ── Growth: last 7 days vs the 7 before ──
+    growth: {
+      signups: { now: num(g.signups_7d), prev: num(g.signups_prev_7d) },
+      jobs: { now: num(g.jobs_7d), prev: num(g.jobs_prev_7d) },
+      gmv: { now: num(g.gmv_7d), prev: num(g.gmv_prev_7d) },
+    },
+    repeat_customers: num(g.repeat_customers),
+    customers_who_posted: num(g.customers_who_posted),
+    repeat_rate_pct: pct(num(g.repeat_customers), num(g.customers_who_posted)),
+
+    // ── Supply vs demand per trade ──
+    supply_demand: supplyDemand.map((r) => ({
+      trade: String(r.trade),
+      jobs: num(r.jobs),
+      unanswered: num(r.unanswered),
+      providers: num(r.providers),
+      can_take_work: num(r.can_take_work),
+    })),
 
     // ── Series & breakdowns ──
     signups_series: signupsSeries.map((r) => ({ date: String(r.date), count: num(r.count) })),

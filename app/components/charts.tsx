@@ -182,7 +182,8 @@ export function StatTile({
 }: {
   label: string;
   value: React.ReactNode;
-  sub?: string;
+  /** Node rather than string so a tile can carry a <Delta /> instead of flat text. */
+  sub?: React.ReactNode;
   tone?: "default" | "good" | "warn";
 }) {
   // 700 steps, not 600: the sub is 12px normal text, so it needs 4.5:1 on white
@@ -194,6 +195,86 @@ export function StatTile({
       <div className="text-xs font-medium text-pj-slate-500">{label}</div>
       <div className="mt-1 text-2xl font-extrabold text-pj-slate-900">{value}</div>
       {sub && <div className={`mt-1 text-xs font-medium ${subTone}`}>{sub}</div>}
+    </div>
+  );
+}
+
+/* ─────────────── Week-over-week delta ───────────────
+   A total answers "how many"; this answers "which way is it going", which is the
+   thing a manager actually acts on. Rendered inline under a StatTile value. */
+
+export function Delta({ now, prev, unit = "" }: { now: number; prev: number; unit?: string }) {
+  // No prior period to compare against — say so rather than implying +100%.
+  if (prev === 0 && now === 0) return <span className="text-pj-slate-400">no activity either week</span>;
+  if (prev === 0) return <span className="text-emerald-700">{`+${compact(now)}${unit} vs none last week`}</span>;
+
+  const change = Math.round(((now - prev) / prev) * 100);
+  const flat = change === 0;
+  const up = change > 0;
+  const tone = flat ? "text-pj-slate-500" : up ? "text-emerald-700" : "text-red-600";
+  const arrow = flat ? "→" : up ? "↑" : "↓";
+  return (
+    <span className={tone}>
+      {arrow} {Math.abs(change)}% vs last week
+    </span>
+  );
+}
+
+/* ─────────────── Activation funnel ───────────────
+   Each stage is a subset of the one above, so the bars are drawn against the first
+   stage and the interesting number is the DROP between rows — that is where supply
+   is being lost. The biggest single drop is called out so it can't be missed. */
+
+export function Funnel({ stages }: { stages: { label: string; value: number; note?: string }[] }) {
+  if (!stages.length) return null;
+  const top = Math.max(1, stages[0].value);
+
+  // Find the steepest fall so it can be highlighted rather than left to be eyeballed.
+  let worstAt = -1;
+  let worstLoss = 0;
+  for (let i = 1; i < stages.length; i++) {
+    const loss = stages[i - 1].value - stages[i].value;
+    if (loss > worstLoss) {
+      worstLoss = loss;
+      worstAt = i;
+    }
+  }
+
+  return (
+    <div className="space-y-2.5">
+      {stages.map((s, i) => {
+        const share = Math.round((s.value / top) * 100);
+        const prev = i > 0 ? stages[i - 1].value : null;
+        const dropped = prev !== null ? prev - s.value : 0;
+        const isWorst = i === worstAt && worstLoss > 0;
+        return (
+          <div key={s.label}>
+            <div className="flex items-baseline gap-2">
+              <div className="w-28 shrink-0 truncate text-sm text-pj-slate-600" title={s.label}>
+                {s.label}
+              </div>
+              <div className="relative h-6 flex-1 rounded-[4px] bg-pj-slate-50">
+                <div
+                  className={`h-full rounded-r-[4px] transition-[width] duration-500 ${
+                    isWorst ? "bg-amber-500" : "bg-pj-blue-600"
+                  }`}
+                  style={{ width: `${Math.max(s.value === 0 ? 0 : 2, share)}%` }}
+                />
+              </div>
+              <div className="w-16 shrink-0 text-right text-sm font-semibold tabular-nums text-pj-slate-900">
+                {compact(s.value)}
+              </div>
+              <div className="w-10 shrink-0 text-right text-xs tabular-nums text-pj-slate-400">{share}%</div>
+            </div>
+            {prev !== null && dropped > 0 && (
+              <div className={`ml-28 pl-2 text-xs ${isWorst ? "font-semibold text-amber-700" : "text-pj-slate-400"}`}>
+                −{compact(dropped)} lost here{isWorst ? " — biggest drop-off" : ""}
+                {s.note ? ` · ${s.note}` : ""}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
