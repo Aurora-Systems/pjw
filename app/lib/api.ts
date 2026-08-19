@@ -2,7 +2,15 @@
 
 import type {
   AccountType,
+  AdminAction,
+  AdminJob,
   AdminMetrics,
+  AdminUser,
+  AdminUserPatched,
+  AdminUserStatus,
+  AdminWalletAction,
+  AdminWalletTxn,
+  AdminWalletView,
   Bid,
   Booking,
   BookingEvent,
@@ -12,6 +20,11 @@ import type {
   CorporateDashboard,
   CorporateProfile,
   Dispute,
+  Enquiry,
+  EnquiryCounts,
+  EnquiryDetail,
+  EnquiryReply,
+  EnquiryStatus,
   Message,
   Earnings,
   Wallet,
@@ -276,6 +289,97 @@ export const api = {
   adminDisputes: () => request<{ disputes: Dispute[] }>("/admin/disputes", { auth: true }),
   resolveDispute: (id: string) =>
     request<{ dispute: Dispute }>("/admin/disputes", { method: "PATCH", body: { id, status: "resolved" }, auth: true }),
+
+  // ── Admin operations console (/admin) ────────────────────────────────────────────────
+  // Everything below is admin-only and every state-changing call is written to admin_actions
+  // server-side, so the `reason` these take is not decoration — it is the audit trail.
+
+  adminUsers: (params: { q?: string; role?: string; status?: AdminUserStatus; limit?: number; offset?: number } = {}) => {
+    const p = new URLSearchParams();
+    if (params.q) p.set("q", params.q);
+    if (params.role) p.set("role", params.role);
+    if (params.status) p.set("status", params.status);
+    if (params.limit != null) p.set("limit", String(params.limit));
+    if (params.offset) p.set("offset", String(params.offset));
+    const s = p.toString();
+    return request<{ users: AdminUser[]; total: number }>(`/admin/users${s ? `?${s}` : ""}`, { auth: true });
+  },
+  /**
+   * Grant/revoke the permission-to-work gate, or change a role.
+   * `id_verified` is NOT the public Verified badge — that comes from Didit KYC alone.
+   */
+  adminUpdateUser: (id: string, body: { id_verified?: boolean; role?: UserRole; reason?: string }) =>
+    request<{ user: AdminUserPatched }>(`/admin/users/${id}`, { method: "PATCH", body, auth: true }),
+  /** Ban (soft delete + revoke every session) or reinstate. */
+  adminBanUser: (id: string, ban: boolean, reason?: string) =>
+    request<{ ok: boolean; banned: boolean }>(`/admin/users/${id}/ban`, {
+      method: "POST",
+      body: { ban, reason },
+      auth: true,
+    }),
+
+  adminJobs: (params: { status?: string; q?: string; limit?: number; offset?: number } = {}) => {
+    const p = new URLSearchParams();
+    if (params.status) p.set("status", params.status);
+    if (params.q) p.set("q", params.q);
+    if (params.limit != null) p.set("limit", String(params.limit));
+    if (params.offset) p.set("offset", String(params.offset));
+    const s = p.toString();
+    return request<{ jobs: AdminJob[]; total: number }>(`/admin/jobs${s ? `?${s}` : ""}`, { auth: true });
+  },
+  /** Take a job down. Refused (409) once anyone is hired — cancel their booking instead. */
+  adminCancelJob: (id: string, reason: string) =>
+    request<{ job: Job }>(`/admin/jobs/${id}`, {
+      method: "PATCH",
+      body: { status: "cancelled", reason },
+      auth: true,
+    }),
+
+  adminWallet: (userId: string, limit?: number) =>
+    request<AdminWalletView>(`/admin/wallet/${userId}${limit ? `?limit=${limit}` : ""}`, { auth: true }),
+  /**
+   * A hand-made money movement. `reason` is required by the API for every action.
+   * The returned `balance` is the balance AFTER the movement — a reversal is allowed to
+   * push it negative, so check it and say so.
+   */
+  adminWalletAction: (
+    userId: string,
+    body: { action: AdminWalletAction; amount?: number; booking_id?: string; reason: string }
+  ) =>
+    request<{ balance: number; transaction: AdminWalletTxn }>(`/admin/wallet/${userId}`, {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+
+  adminEnquiries: (params: { status?: EnquiryStatus | ""; q?: string; limit?: number; offset?: number } = {}) => {
+    const p = new URLSearchParams();
+    if (params.status) p.set("status", params.status);
+    if (params.q) p.set("q", params.q);
+    if (params.limit != null) p.set("limit", String(params.limit));
+    if (params.offset) p.set("offset", String(params.offset));
+    const s = p.toString();
+    return request<{ enquiries: Enquiry[]; total: number; counts: EnquiryCounts }>(
+      `/admin/enquiries${s ? `?${s}` : ""}`,
+      { auth: true }
+    );
+  },
+  adminEnquiry: (id: string) =>
+    request<{ enquiry: EnquiryDetail; replies: EnquiryReply[] }>(`/admin/enquiries/${id}`, { auth: true }),
+  /**
+   * Answer an enquiry. The reply is saved first and emailed best-effort, so `emailed:false`
+   * means "stored but the person never got it" — the console must show that, not swallow it.
+   */
+  replyToEnquiry: (id: string, body: string) =>
+    request<{ reply: EnquiryReply; emailed: boolean }>(`/admin/enquiries/${id}/reply`, {
+      method: "POST",
+      body: { body },
+      auth: true,
+    }),
+  setEnquiryStatus: (id: string, status: EnquiryStatus) =>
+    request<{ enquiry: EnquiryDetail }>(`/admin/enquiries/${id}`, { method: "PATCH", body: { status }, auth: true }),
+
+  adminAudit: (limit = 100) => request<{ actions: AdminAction[] }>(`/admin/audit?limit=${limit}`, { auth: true }),
 
   conversations: () => request<{ conversations: Conversation[] }>("/conversations", { auth: true }),
   startConversation: (counterparty_id: string, job_id?: string) =>

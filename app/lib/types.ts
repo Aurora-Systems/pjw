@@ -439,3 +439,136 @@ export interface Message {
   attachment_type?: string | null;
   attachment_name?: string | null;
 }
+
+/* ───────────────────────────────────────────
+   Admin operations console (/admin)
+   Shapes returned by the /api/admin/* routes. Kept separate from the public types on
+   purpose: these payloads expose things the rest of the app must never see (the raw
+   permission-to-work gate, ban state, wallet balances, the audit trail).
+   ─────────────────────────────────────────── */
+
+/** A row of GET /api/admin/users. */
+export interface AdminUser {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  role: UserRole;
+  avatar_url: string | null;
+  city: string | null;
+  created_at: string;
+  /**
+   * Permission to work — an admin grants this and it gates bidding. It is NOT the public
+   * Verified badge; only `didit_status = 'approved'` earns that. The admin payload shows
+   * the raw gate (unlike /api/providers, which masks it behind the Didit truth).
+   */
+  id_verified: boolean;
+  didit_status: string | null;
+  /** A ban is a soft delete, so this is `deleted_at IS NOT NULL`. */
+  banned: boolean;
+  /** Providers only — everyone else has no wallet, hence null rather than 0. */
+  balance: number | null;
+  jobs_count: number;
+  bookings_count: number;
+}
+
+/** The narrower row PATCH /api/admin/users/:id returns (no counts, no balance). */
+export type AdminUserPatched = Pick<
+  AdminUser,
+  "id" | "full_name" | "email" | "phone" | "role" | "avatar_url" | "city" | "created_at" | "id_verified" | "didit_status" | "banned"
+> & { verification_status: string };
+
+export type AdminUserStatus = "all" | "active" | "banned" | "unverified";
+
+/** A row of GET /api/admin/jobs. */
+export interface AdminJob {
+  id: string;
+  title: string;
+  category: string | null;
+  status: "open" | "assigned" | "completed" | "cancelled";
+  budget_min: number | null;
+  budget_max: number | null;
+  created_at: string;
+  location: string | null;
+  /** A multi-hire job stays `open` while partially staffed — read these, not `status`. */
+  workers_needed: number;
+  hired_count: number;
+  offers: number;
+  customer_name: string;
+  customer_id: string;
+}
+
+/** Ledger row of GET /api/admin/wallet/:userId (numbers, not the strings WalletTxn carries). */
+export interface AdminWalletTxn {
+  id: string;
+  /** topup | commission | commission_refund | admin_credit | topup_reversal | … (no DB constraint). */
+  type: string;
+  amount: number;
+  balance_after: number;
+  description: string | null;
+  created_at: string;
+}
+
+export interface AdminWalletView {
+  balance: number;
+  transactions: AdminWalletTxn[];
+}
+
+export type AdminWalletAction = "credit" | "reverse_topup" | "refund_commission";
+
+export type EnquiryStatus = "open" | "answered" | "closed";
+
+/** A row of GET /api/admin/enquiries. */
+export interface Enquiry {
+  id: string;
+  source: string;
+  user_id: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  subject: string | null;
+  message: string;
+  status: EnquiryStatus;
+  assigned_to: string | null;
+  answered_at: string | null;
+  created_at: string;
+  reply_count: number;
+}
+
+/** GET /api/admin/enquiries/:id — the whole row plus the joined names. */
+export type EnquiryDetail = Omit<Enquiry, "reply_count"> & {
+  updated_at?: string | null;
+  /** The linked account's current name; the enquiry itself stores the name as typed. */
+  user_name?: string | null;
+  assigned_to_name?: string | null;
+};
+
+export interface EnquiryReply {
+  id: string;
+  admin_id: string | null;
+  admin_name: string | null;
+  body: string;
+  /** Null means the answer is stored but was never delivered — surface this, don't hide it. */
+  emailed_at: string | null;
+  created_at: string;
+}
+
+export interface EnquiryCounts {
+  open: number;
+  answered: number;
+  closed: number;
+}
+
+/** A row of GET /api/admin/audit — every state-changing admin action. */
+export interface AdminAction {
+  id: string;
+  /** Null when the admin who did it has since been removed (the row deliberately survives). */
+  admin_id: string | null;
+  admin_name: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  detail: Record<string, unknown> | null;
+  reason: string | null;
+  created_at: string;
+}

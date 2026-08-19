@@ -67,6 +67,77 @@ export function bidAcceptedEmail(p: {
   </div></body></html>`;
 }
 
+/** Escape, then keep the author's line breaks — admins type replies as plain text. */
+function escMultiline(s: string): string {
+  return esc(s).replace(/\r\n|\r|\n/g, "<br>");
+}
+
+/**
+ * "We've replied to your enquiry" — sent to whoever wrote in (support form on the web,
+ * or in-app support) when an admin answers them from the console.
+ *
+ * The sender address is transactional and is not monitored for inbound mail, so the
+ * footer points back at the contact form rather than promising that a reply lands
+ * with us — telling someone to "just reply" would silently drop their follow-up.
+ */
+export function enquiryReplyEmail(p: {
+  /** Who wrote in — used for the greeting. */
+  name: string;
+  /** Their original subject, if they gave one. */
+  subject: string | null;
+  /** Their original message, quoted back so the reply makes sense on its own. */
+  originalMessage: string;
+  /** What the admin typed. */
+  reply: string;
+  /** The admin's name, if we have it ("— Tinashe, PocketJobs Support"). */
+  adminName?: string | null;
+}): string {
+  const base = process.env.APP_PUBLIC_URL || "https://pocketjobs.co";
+  const contactUrl = `${base}/company/contact`;
+  const firstName = p.name.trim().split(" ")[0] || "there";
+
+  return `<!doctype html><html><body style="margin:0;background:#F8FAFC;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px">
+    <div style="font-size:20px;font-weight:800;color:#0F172A;margin-bottom:20px">
+      Pocket<span style="color:#2563EB">Jobs</span>
+    </div>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px">
+      <div style="display:inline-block;background:#EFF6FF;color:#2563EB;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;margin-bottom:16px">
+        SUPPORT REPLY
+      </div>
+      <h1 style="margin:0 0 8px;font-size:24px;color:#0F172A">Hi ${esc(firstName)}, here's our reply</h1>
+      <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6">
+        Thanks for getting in touch${p.subject ? ` about <strong>${esc(p.subject)}</strong>` : ""}.
+      </p>
+      <div style="color:#0F172A;font-size:15px;line-height:1.7;padding-bottom:22px">
+        ${escMultiline(p.reply)}
+      </div>
+      ${
+        p.adminName
+          ? `<p style="margin:0 0 22px;color:#475569;font-size:14px">— ${esc(p.adminName)}, PocketJobs Support</p>`
+          : `<p style="margin:0 0 22px;color:#475569;font-size:14px">— PocketJobs Support</p>`
+      }
+      <div style="border-top:1px solid #E2E8F0;padding-top:18px;margin-bottom:22px">
+        <div style="color:#94A3B8;font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:8px">
+          YOUR MESSAGE
+        </div>
+        <div style="background:#F8FAFC;border-left:3px solid #E2E8F0;border-radius:0 8px 8px 0;padding:12px 14px;color:#475569;font-size:14px;line-height:1.6">
+          ${escMultiline(p.originalMessage)}
+        </div>
+      </div>
+      <a href="${contactUrl}" style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px">
+        Send us another message
+      </a>
+      <p style="margin:22px 0 0;color:#475569;font-size:13px;line-height:1.6">
+        This address doesn't take replies — use the link above and we'll pick it up from there.
+      </p>
+    </div>
+    <p style="color:#94A3B8;font-size:12px;text-align:center;margin-top:20px">
+      PocketJobs · Harare, Zimbabwe
+    </p>
+  </div></body></html>`;
+}
+
 export interface EmailAttachment {
   /** File name shown to the recipient, e.g. "pocketjobs-data.json". */
   filename: string;

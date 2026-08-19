@@ -99,7 +99,18 @@ All under `app/api/`, `runtime = "nodejs"`, CORS-enabled. Bearer-token (app JWT)
 - `GET/POST bookings`, `PATCH bookings/:id`; `POST reviews`; `GET notifications`, `POST notifications/read`
 - **provider**: `GET provider/{dashboard,jobs,bids,earnings,profile,reviews}`, `PATCH provider/profile`, `POST provider/boost`
 - **corporate**: `GET corporate/dashboard`, `GET/PATCH corporate/profile`, `GET/POST workforce`
-- **admin**: `GET admin/metrics`, `GET/PATCH admin/verifications`, `GET/PATCH admin/disputes`
+- **admin** (all `requireRole(req,"admin")`): `GET admin/metrics`, `GET/PATCH admin/verifications`,
+  `GET/PATCH admin/disputes`, `GET admin/users`, `PATCH admin/users/:id`, `POST admin/users/:id/ban`,
+  `GET admin/jobs`, `PATCH admin/jobs/:id`, `GET/POST admin/wallet/:userId`,
+  `GET admin/enquiries`, `GET/PATCH admin/enquiries/:id`, `POST admin/enquiries/:id/reply`,
+  `GET admin/audit`. Plus the PUBLIC `POST /api/enquiries` (web + app intake, unauthenticated).
+  - **Every state-changing admin action writes an `admin_actions` row** (`lib/admin-audit.ts`) — the
+    console moves money and revokes access, so actions must stay attributable to a named admin with a
+    reason. Money actions reuse `lib/wallet.ts` and are atomic in SQL.
+  - "Approve user" sets `users.id_verified` — the *permission-to-work* gate, **not** the public Verified
+    badge (that is `didit_status`; see Domain rules). Do not conflate them.
+  - Tables added for this: `enquiries`, `enquiry_replies`, `admin_actions`
+    (`scripts/migrate-admin-console.mjs`).
   - `admin/metrics` returns the full dashboard payload. The four original keys (`active_users`, `jobs_today`,
     `open_disputes`, `pending_verifications`) are **load-bearing for the mobile app — never rename them**;
     everything else (`total_users`, `active_jobs`, `gmv_total`, `signups_series`, …) is additive.
