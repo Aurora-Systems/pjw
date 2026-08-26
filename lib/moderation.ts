@@ -21,28 +21,30 @@ const EMAIL_G = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
 /** A bare run of 7+ digits — catches "0772123456" written without separators. */
 const DIGITS_G = /\d{7,}/g;
 
+/** What a redacted contact detail looks like to the reader. */
+export const MASK = "***";
+
 /**
- * Replace contact details in `text` with a visible placeholder.
+ * Replace contact details in `text` with `***`.
  *
  * Applied ON READ, never on write: the stored row keeps the original wording so a dispute
- * or moderation review can still see exactly what was said. Masking output is deliberately
- * obvious ("[number hidden]") rather than silent deletion — the reader should understand a
- * rule applied, not think the sender typed nonsense.
+ * or moderation review can still see exactly what was said.
  *
- * Keeps the last 2 digits of a phone number so a legitimate reference ("...ends 42") is
- * still usable to the reader without handing over a dialable number.
+ * Nothing of the number survives — no trailing digits. Partial digits are still a leak: a
+ * local dialling prefix plus the last few figures narrows a number enough to guess, which
+ * defeats the point of hiding it.
  */
 export function maskContactInfo(text: string): string {
   if (!text) return text;
   return text
-    .replace(EMAIL_G, "[email hidden]")
+    .replace(EMAIL_G, MASK)
     .replace(PHONE_G, (m) => {
       // The pattern lets each digit carry a trailing separator, so a match can swallow the
-      // space AFTER the number ("456 instead" -> "...]instead"). Put any trailing
+      // space AFTER the number ("456 instead" -> "***instead"). Put any trailing
       // punctuation/whitespace back rather than gluing the next word on.
       const tail = m.match(/[\s().-]+$/)?.[0] ?? "";
       const digits = m.replace(/\D/g, "");
-      return digits.length >= 9 ? `[number hidden ••${digits.slice(-2)}]${tail}` : m;
+      return digits.length >= 9 ? `${MASK}${tail}` : m;
     })
-    .replace(DIGITS_G, (m) => `[number hidden ••${m.slice(-2)}]`);
+    .replace(DIGITS_G, MASK);
 }

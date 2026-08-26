@@ -429,6 +429,11 @@ export interface Conversation {
 }
 
 export interface Message {
+  /**
+   * Set by the server when it redacted contact details out of `body` on read. Only ever on
+   * the other party's messages — you always see your own text as you typed it.
+   */
+  masked?: boolean;
   id: string;
   sender_id: string;
   body: string;

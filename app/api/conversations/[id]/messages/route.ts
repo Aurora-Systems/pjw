@@ -20,22 +20,6 @@ async function assertMember(conversationId: string, userId: string) {
   return rows.length > 0;
 }
 
-/**
- * True once the two people in this conversation share a booking (any status).
- * Used to stop masking contact details — see the note in GET.
- */
-async function partiesHaveBooking(conversationId: string): Promise<boolean> {
-  const rows = await sql`
-    SELECT 1
-    FROM conversations c
-    JOIN bookings b
-      ON b.customer_id = c.customer_id AND b.provider_id = c.provider_id
-    WHERE c.id = ${conversationId}
-    LIMIT 1
-  `;
-  return rows.length > 0;
-}
-
 /** GET /api/conversations/:id/messages — full thread (also marks incoming read). */
 export const GET = safe(async (
   req: NextRequest,
@@ -71,7 +55,7 @@ export const GET = safe(async (
     `;
   }
 
-  // Hide contact details from the RECIPIENT until these two have actually booked.
+  // Hide contact details from the RECIPIENT, always.
   //
   // Masking happens here, on read, never on write: the stored row keeps the original wording
   // so a dispute or moderation review can still see what was really said.
@@ -79,19 +63,21 @@ export const GET = safe(async (
   // Only the other party's messages are masked — showing someone their own sentence back with
   // holes in it just reads as a bug, and the composer already warned them before they sent it.
   //
-  // It lifts once a booking exists between the pair, because at that point the booking page
-  // hands them each other's phone number anyway (see /api/bookings/:id) — continuing to mask
-  // here would be theatre, and would break legitimate "I'm outside, ring me" messages.
-  const booked = await partiesHaveBooking(id);
+  // This deliberately does NOT stop once the two have booked. An earlier version lifted it at
+  // that point, reasoning that the booking page already shows both phone numbers so hiding
+  // them in chat was theatre. In practice that made the whole feature invisible: chats
+  // normally start from an accepted offer, so a booking almost always exists and nothing was
+  // ever masked. Phone numbers belong in the booking page, where the platform controls the
+  // exchange — not loose in the chat log.
   const shaped = messages.map((m) => {
     const mine = m.sender_id === auth.sub;
     const body = m.body as string | null;
-    if (booked || mine || !body) return m;
+    if (mine || !body) return m;
     const cleaned = maskContactInfo(body);
     return { ...m, body: cleaned, masked: cleaned !== body };
   });
 
-  return json({ messages: shaped, contact_masking: !booked });
+  return json({ messages: shaped, contact_masking: true });
 });
 
 /** POST /api/conversations/:id/messages — send a message. */

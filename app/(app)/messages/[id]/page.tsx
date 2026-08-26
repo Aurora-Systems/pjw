@@ -159,7 +159,7 @@ export default function MessageThreadPage() {
           messages.map((m) => {
             const mine = m.sender_id === user?.id;
             return (
-              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
                     mine ? "bg-pj-blue-600 text-white" : "bg-pj-slate-100 text-pj-slate-900"
@@ -171,6 +171,12 @@ export default function MessageThreadPage() {
                     {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>
+                {/* Without this the reader just sees "***" and assumes the sender typed nonsense. */}
+                {m.masked && (
+                  <div className="mt-0.5 max-w-[75%] text-[11px] text-pj-slate-400">
+                    Contact details hidden — keep arrangements on PocketJobs.
+                  </div>
+                )}
               </div>
             );
           })
