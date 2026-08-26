@@ -3,7 +3,7 @@ import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
 import { notify } from "@/lib/notify";
-import { hasContactInfo } from "@/lib/moderation";
+import { hasContactInfo, maskContactInfo } from "@/lib/moderation";
 import { isOurUploadUrl } from "@/lib/r2";
 
 export const runtime = "nodejs";
@@ -16,6 +16,22 @@ async function assertMember(conversationId: string, userId: string) {
   const rows = await sql`
     SELECT id FROM conversations
     WHERE id = ${conversationId} AND (customer_id = ${userId} OR provider_id = ${userId})
+  `;
+  return rows.length > 0;
+}
+
+/**
+ * True once the two people in this conversation share a booking (any status).
+ * Used to stop masking contact details — see the note in GET.
+ */
+async function partiesHaveBooking(conversationId: string): Promise<boolean> {
+  const rows = await sql`
+    SELECT 1
+    FROM conversations c
+    JOIN bookings b
+      ON b.customer_id = c.customer_id AND b.provider_id = c.provider_id
+    WHERE c.id = ${conversationId}
+    LIMIT 1
   `;
   return rows.length > 0;
 }
@@ -54,7 +70,28 @@ export const GET = safe(async (
       WHERE conversation_id = ${id} AND sender_id <> ${auth.sub} AND read_at IS NULL
     `;
   }
-  return json({ messages });
+
+  // Hide contact details from the RECIPIENT until these two have actually booked.
+  //
+  // Masking happens here, on read, never on write: the stored row keeps the original wording
+  // so a dispute or moderation review can still see what was really said.
+  //
+  // Only the other party's messages are masked — showing someone their own sentence back with
+  // holes in it just reads as a bug, and the composer already warned them before they sent it.
+  //
+  // It lifts once a booking exists between the pair, because at that point the booking page
+  // hands them each other's phone number anyway (see /api/bookings/:id) — continuing to mask
+  // here would be theatre, and would break legitimate "I'm outside, ring me" messages.
+  const booked = await partiesHaveBooking(id);
+  const shaped = messages.map((m) => {
+    const mine = m.sender_id === auth.sub;
+    const body = m.body as string | null;
+    if (booked || mine || !body) return m;
+    const cleaned = maskContactInfo(body);
+    return { ...m, body: cleaned, masked: cleaned !== body };
+  });
+
+  return json({ messages: shaped, contact_masking: !booked });
 });
 
 /** POST /api/conversations/:id/messages — send a message. */
