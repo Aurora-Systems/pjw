@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { sql } from "@/lib/db";
 import { getAuth } from "@/lib/auth";
 import { json, error, preflight, safe } from "@/lib/http";
+import { maskContactInfo } from "@/lib/moderation";
 
 export const runtime = "nodejs";
 
@@ -24,12 +25,13 @@ export const GET = safe(async (req: NextRequest) => {
            -- LATERAL yields a NULL body there too, which COALESCE alone would mislabel).
            CASE WHEN m.created_at IS NULL THEN NULL
                 ELSE COALESCE(NULLIF(m.body, ''), '📎 Attachment') END AS last_message,
+           m.sender_id AS last_sender_id,
            m.created_at AS last_at
     FROM conversations c
     JOIN users cu ON cu.id = c.customer_id
     JOIN users pr ON pr.id = c.provider_id
     LEFT JOIN LATERAL (
-      SELECT body, created_at FROM messages WHERE conversation_id = c.id
+      SELECT body, sender_id, created_at FROM messages WHERE conversation_id = c.id
       ORDER BY created_at DESC LIMIT 1
     ) m ON true
     WHERE c.customer_id = $1 OR c.provider_id = $1
@@ -40,7 +42,19 @@ export const GET = safe(async (req: NextRequest) => {
   const limit = Math.min(Math.max(Number(p.get("limit")) || 100, 1), 200);
   const offset = Math.max(Number(p.get("offset")) || 0, 0);
   const conversations = await sql.query(text, [auth.sub, limit, offset]);
-  return json({ conversations });
+
+  // Mask the preview too. The thread endpoint already redacts, but the inbox list renders the
+  // last message straight onto the Messages tab — leaving it raw meant the number was readable
+  // without ever opening the conversation, which defeated the whole feature.
+  // Same rule as the thread: only the other party's text is masked, never your own.
+  const shaped = conversations.map((c) => {
+    const preview = c.last_message as string | null;
+    if (!preview || c.last_sender_id === auth.sub) return c;
+    const cleaned = maskContactInfo(preview);
+    return { ...c, last_message: cleaned, last_message_masked: cleaned !== preview };
+  });
+
+  return json({ conversations: shaped });
 });
 
 /**

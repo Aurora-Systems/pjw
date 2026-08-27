@@ -141,7 +141,12 @@ export const POST = safe(async (
   `;
 
   if (recipient) {
-    const preview = text ? text.slice(0, 120) : attachmentName || "Sent an attachment";
+    // Mask BEFORE the preview is built. A push notification renders on the lock screen, so an
+    // unmasked preview would hand over the number without the recipient even opening the app —
+    // the one place masking must not be skipped.
+    const preview = text
+      ? maskContactInfo(text).slice(0, 120)
+      : attachmentName || "Sent an attachment";
     await notify(recipient, "messages", auth.name || "New message", preview, {
       entity: "chat",
       id,
