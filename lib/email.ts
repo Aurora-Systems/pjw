@@ -138,6 +138,63 @@ export function enquiryReplyEmail(p: {
   </div></body></html>`;
 }
 
+/**
+ * Admins write these messages like letters and habitually open with a "Subject: …" line.
+ * Lift that line out so it becomes the real email subject instead of sitting in the body.
+ * Returns the message unchanged (subject: null) when there is no such first line.
+ */
+export function splitSubjectLine(message: string): { subject: string | null; body: string } {
+  const m = message.match(/^\s*subject\s*:\s*(.+?)\s*(?:\r?\n|$)/i);
+  if (!m) return { subject: null, body: message.trim() };
+  return { subject: m[1].trim() || null, body: message.slice(m[0].length).trim() };
+}
+
+/**
+ * A message an admin wrote to one user — sent when support takes down their job post.
+ *
+ * The admin's text goes out verbatim: they write their own greeting and sign-off, so this
+ * template adds neither. `dir="auto"` lets a message written in Arabic (posts have come in
+ * that way) render right-to-left instead of as a jumbled left-aligned block.
+ */
+export function adminMessageEmail(p: {
+  /** What the admin typed, minus any "Subject:" line (see splitSubjectLine). */
+  message: string;
+  /** The job this is about, shown as context above the message. */
+  jobTitle?: string | null;
+}): string {
+  const base = process.env.APP_PUBLIC_URL || "https://pocketjobs.co";
+
+  return `<!doctype html><html><body style="margin:0;background:#F8FAFC;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px">
+    <div style="font-size:20px;font-weight:800;color:#0F172A;margin-bottom:20px">
+      Pocket<span style="color:#2563EB">Jobs</span>
+    </div>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px">
+      <div style="display:inline-block;background:#EFF6FF;color:#2563EB;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;margin-bottom:16px">
+        MESSAGE FROM POCKETJOBS SUPPORT
+      </div>
+      ${
+        p.jobTitle
+          ? `<p style="margin:0 0 18px;color:#475569;font-size:14px">About your job post: <strong style="color:#0F172A">${esc(p.jobTitle)}</strong></p>`
+          : ""
+      }
+      <div dir="auto" style="color:#0F172A;font-size:15px;line-height:1.7;padding-bottom:22px">
+        ${escMultiline(p.message)}
+      </div>
+      <a href="${base}" style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px">
+        Open PocketJobs
+      </a>
+      <p style="margin:22px 0 0;color:#475569;font-size:13px;line-height:1.6">
+        This address doesn't take replies. To get back to us, use the contact page at
+        <a href="${base}/company/contact" style="color:#2563EB">pocketjobs.co/company/contact</a>.
+      </p>
+    </div>
+    <p style="color:#94A3B8;font-size:12px;text-align:center;margin-top:20px">
+      PocketJobs · Harare, Zimbabwe
+    </p>
+  </div></body></html>`;
+}
+
 export interface EmailAttachment {
   /** File name shown to the recipient, e.g. "pocketjobs-data.json". */
   filename: string;

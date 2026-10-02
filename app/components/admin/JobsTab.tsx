@@ -83,9 +83,14 @@ export default function JobsTab() {
     setOffset(0);
   };
 
+  // What happened to the admin's message on the last cancel. Shown until dismissed, because
+  // "the poster was never told" is the one outcome the admin must not miss.
+  const [delivery, setDelivery] = useState<{ title: string; emailed_to: string | null; has_email: boolean } | null>(null);
+
   const cancel = async (job: AdminJob, reason: string) => {
-    await api.adminCancelJob(job.id, reason);
+    const res = await api.adminCancelJob(job.id, reason);
     setJobs((list) => list.map((j) => (j.id === job.id ? { ...j, status: "cancelled" } : j)));
+    setDelivery({ title: job.title, emailed_to: res.emailed ? res.emailed_to : null, has_email: res.has_email });
   };
 
   return (
@@ -94,6 +99,29 @@ export default function JobsTab() {
         <SearchInput value={q} onChange={changeQ} placeholder="Search title, category, place or customer…" />
         <FilterPills options={STATUS_OPTIONS} value={status} onChange={changeStatus} />
       </div>
+
+      {delivery && (
+        <div
+          className={`mb-4 rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${
+            delivery.emailed_to ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"
+          }`}
+        >
+          <p className={`text-sm ${delivery.emailed_to ? "text-emerald-800" : "text-amber-800"}`}>
+            <span className="font-bold">&ldquo;{delivery.title}&rdquo; was cancelled. </span>
+            {delivery.emailed_to
+              ? `Your message was emailed to ${delivery.emailed_to} and added to their notifications.`
+              : delivery.has_email
+                ? "Your message was NOT emailed — the mail service refused it or is not configured. It is only in their in-app notifications, which they may never open."
+                : "They have no email address, so your message is only in their in-app notifications, which they may never open. Follow up by phone if it matters."}
+          </p>
+          <button
+            onClick={() => setDelivery(null)}
+            className="shrink-0 text-sm font-semibold text-pj-slate-500 hover:text-pj-slate-700"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {err && (
         <div className="mb-4">
@@ -173,7 +201,11 @@ export default function JobsTab() {
           confirmLabel="Cancel the job"
           danger
           reasonRequired
-          reasonHint="The customer is told this reason, and it goes on the audit trail."
+          reasonLabel="Message to the poster"
+          reasonHint='Emailed to them and added to their notifications. Start with "Subject: …" to set the email subject.'
+          reasonMaxLength={3000}
+          reasonRows={7}
+          reasonPlaceholder={"Subject: Update on your PocketJobs post\n\nHello …"}
           onClose={() => setCancelling(null)}
           onConfirm={(reason) => cancel(cancelling, reason)}
         >

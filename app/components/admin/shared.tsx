@@ -116,6 +116,9 @@ export function ConfirmDialog({
   reasonRequired = false,
   reasonLabel = "Reason",
   reasonHint = "Recorded on the audit trail against your name.",
+  reasonMaxLength = 500,
+  reasonRows = 2,
+  reasonPlaceholder,
   children,
   onConfirm,
   onClose,
@@ -127,6 +130,10 @@ export function ConfirmDialog({
   reasonRequired?: boolean;
   reasonLabel?: string;
   reasonHint?: string;
+  /** Where the "reason" is really a message to a user, give it letter-sized room. */
+  reasonMaxLength?: number;
+  reasonRows?: number;
+  reasonPlaceholder?: string;
   children?: React.ReactNode;
   onConfirm: (reason: string) => Promise<void>;
   onClose: () => void;
@@ -165,12 +172,22 @@ export function ConfirmDialog({
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            rows={2}
-            maxLength={500}
-            placeholder={reasonRequired ? "Why are you doing this?" : "Add context for whoever reads this later"}
+            rows={reasonRows}
+            maxLength={reasonMaxLength}
+            placeholder={
+              reasonPlaceholder ??
+              (reasonRequired ? "Why are you doing this?" : "Add context for whoever reads this later")
+            }
             className={inputClass}
           />
-          <span className="block text-xs text-pj-slate-400 mt-1">{reasonHint}</span>
+          <span className="flex justify-between gap-3 text-xs text-pj-slate-400 mt-1">
+            <span>{reasonHint}</span>
+            {reasonMaxLength > 500 && (
+              <span className="shrink-0 tabular-nums">
+                {reason.length}/{reasonMaxLength}
+              </span>
+            )}
+          </span>
         </label>
       )}
 

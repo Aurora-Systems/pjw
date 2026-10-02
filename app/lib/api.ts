@@ -329,7 +329,7 @@ export const api = {
   },
   /** Take a job down. Refused (409) once anyone is hired — cancel their booking instead. */
   adminCancelJob: (id: string, reason: string) =>
-    request<{ job: Job }>(`/admin/jobs/${id}`, {
+    request<{ job: Job; emailed: boolean; emailed_to: string | null; has_email: boolean }>(`/admin/jobs/${id}`, {
       method: "PATCH",
       body: { status: "cancelled", reason },
       auth: true,

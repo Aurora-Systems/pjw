@@ -6,6 +6,7 @@ import { json, error, preflight, safe } from "@/lib/http";
 import { parseBody } from "@/lib/validate";
 import { logAdminAction } from "@/lib/admin-audit";
 import { notify } from "@/lib/notify";
+import { adminMessageEmail, isEmailConfigured, sendEmail, splitSubjectLine } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,8 @@ export function OPTIONS() {
 
 const bodySchema = z.object({
   status: z.literal("cancelled"),
-  reason: z.string().trim().max(500).optional(),
+  // Admins use this as a letter to the poster, not a one-line reason, so it gets room.
+  reason: z.string().trim().max(3000, "Keep the message under 3000 characters").optional(),
 });
 
 /**
@@ -37,7 +39,9 @@ export const PATCH = safe(async (
   const body = await parseBody(req, bodySchema);
 
   const found = await sql`
-    SELECT id, title, status, hired_count, customer_id FROM jobs WHERE id = ${id}
+    SELECT j.id, j.title, j.status, j.hired_count, j.customer_id, u.email AS customer_email
+    FROM jobs j JOIN users u ON u.id = j.customer_id
+    WHERE j.id = ${id}
   `;
   if (found.length === 0) return error("Job not found", 404);
   const job = found[0];
@@ -63,24 +67,49 @@ export const PATCH = safe(async (
     return error("This job changed while you were cancelling it. Reload and try again.", 409);
   }
 
+  // The admin's message has to reach the poster by EMAIL. An in-app notice alone was the
+  // whole delivery path before, and the people whose stale or misplaced posts get taken down
+  // are by definition people who have stopped opening the app — sixteen of these letters sat
+  // unread in the notifications table while the admin believed they had been sent.
+  const { subject, body: message } = splitSubjectLine(body.reason ?? "");
+  const title = String(job.title);
+  const to = (job.customer_email as string | null)?.trim() || null;
+  let emailed = false;
+  if (message && to && isEmailConfigured()) {
+    emailed = await sendEmail(
+      to,
+      subject || `Update on your PocketJobs post "${title}"`,
+      adminMessageEmail({ message, jobTitle: title })
+    );
+  }
+
   await logAdminAction({
     admin_id: admin.sub,
     action: "job.cancel",
     target_type: "job",
     target_id: id,
-    detail: { title: job.title, previous_status: job.status, customer_id: job.customer_id },
+    detail: {
+      title,
+      previous_status: job.status,
+      customer_id: job.customer_id,
+      emailed,
+      emailed_to: emailed ? to : null,
+    },
     reason: body.reason ?? null,
   });
 
+  // Still mirrored in-app for anyone who does open it.
   await notify(
     String(job.customer_id),
     "jobs",
-    "Your job was cancelled",
-    body.reason
-      ? `"${job.title}" was cancelled by PocketJobs support: ${body.reason}`
-      : `"${job.title}" was cancelled by PocketJobs support.`,
+    subject || "Your job was cancelled",
+    message
+      ? `"${title}" was taken down by PocketJobs support. ${message}`
+      : `"${title}" was taken down by PocketJobs support.`,
     { entity: "job", id }
   );
 
-  return json({ job: updated[0] });
+  // `emailed` drives the console's delivery note, so the admin knows when nothing left the
+  // building and they need to follow up another way.
+  return json({ job: updated[0], emailed, emailed_to: emailed ? to : null, has_email: Boolean(to) });
 });
