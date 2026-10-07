@@ -8,8 +8,13 @@
  * Safety:
  *  - Disabled unless BOTH APP_REVIEW_EMAIL and APP_REVIEW_CODE are set.
  *  - Constrained to exactly one email address that we control (a demo account).
- *  - The fixed code is a secret held in env (never committed), and normal rate limits
- *    still apply. Point this at a throwaway demo account, never a real user's email.
+ *  - The fixed code is a secret held in env (never committed). Verification is rate
+ *    limited BEFORE the bypass check (see /auth/otp/verify), so the fixed code gets the same
+ *    10-attempts-per-10-minutes cap as a real one. Point this at a throwaway demo account,
+ *    never a real user's email.
+ *  - Both variables must be set in PRODUCTION (Netlify), not just .env.local. Without them
+ *    the review email silently falls back to a normal emailed code, which a reviewer
+ *    cannot receive. That is exactly how a Play review failed in October 2026.
  *
  * Set in the web app's env (and Netlify):
  *   APP_REVIEW_EMAIL=appreview@pocketjobs.co

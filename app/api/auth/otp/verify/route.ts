@@ -36,6 +36,13 @@ export const POST = safe(async (req: NextRequest) => {
   const otp = body.otp?.trim();
   if (!email || !otp) return error("email and otp are required");
 
+  // Throttle verification attempts to stop 6-digit brute force: per-IP and per-email.
+  // This MUST run before the review-account check below. That account's code is fixed and
+  // never expires, so letting it skip the limits made it guessable in at most a million
+  // tries with nothing to stop them.
+  await rateLimit(`otp-vrf:ip:${clientIp(req)}`, 30, 600);
+  await rateLimit(`otp-vrf:email:${email}`, 10, 600);
+
   // App-store review account: accept the fixed code (no Neon Auth round-trip, since the
   // reviewer never received an email). Resolves/creates a single demo customer account.
   if (isReviewAccount(email)) {
@@ -51,10 +58,6 @@ export const POST = safe(async (req: NextRequest) => {
   if (signup && !body.full_name?.trim()) {
     return error("Please enter your name to create an account");
   }
-
-  // Throttle verification attempts to stop 6-digit brute force: per-IP and per-email.
-  await rateLimit(`otp-vrf:ip:${clientIp(req)}`, 30, 600);
-  await rateLimit(`otp-vrf:email:${email}`, 10, 600);
 
   const authUser = await verifySignInOtp(email, otp);
   if (!authUser) return error("Invalid or expired code", 401);
