@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Button from "./components/Button";
 import HowItWorksFilms from "./components/HowItWorksFilms";
+import StoreBadges from "./components/StoreBadges";
 
 /* ─── Scroll animation observer ─── */
 function useScrollAnimation() {
@@ -590,6 +591,121 @@ export default function Home() {
                 </div>
               </div>
               {/* eslint-enable @next/next/no-img-element */}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          GET THE APP
+          ══════════════════════════════════════════ */}
+      <section id="get-the-app" className="relative py-20 lg:py-28 bg-pj-slate-900 overflow-hidden scroll-mt-20">
+        {/* Soft blue glow behind the phone */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute -top-32 right-[-10%] w-[520px] h-[520px] rounded-full bg-pj-blue-600/25 blur-3xl" />
+          <div className="absolute bottom-[-30%] left-[-10%] w-[420px] h-[420px] rounded-full bg-pj-sky-500/10 blur-3xl" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-14 lg:gap-16 items-center">
+            {/* Left: the pitch and the store buttons */}
+            <div className="animate-on-scroll text-center lg:text-left">
+              <span className="inline-block text-sm font-semibold text-pj-blue-400 uppercase tracking-wider mb-3">
+                Get the app
+              </span>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-5 text-balance">
+                PocketJobs, right in your pocket
+              </h2>
+              <p className="text-lg text-pj-slate-400 max-w-xl mx-auto lg:mx-0 mb-8">
+                Post a job in a minute, get offers from verified pros nearby, and follow the work
+                from start to finish. Free on iPhone and Android.
+              </p>
+
+              <ul className="space-y-3 mb-10 max-w-md mx-auto lg:mx-0 text-left">
+                {[
+                  "Instant alerts when a new job or offer comes in",
+                  "Chat and share photos without giving out your number",
+                  "Track your provider on the way to the job",
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-3 text-pj-slate-300">
+                    <svg className="w-5 h-5 mt-0.5 shrink-0 text-pj-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex flex-col items-center lg:items-start gap-7">
+                <StoreBadges size="lg" className="justify-center lg:justify-start" />
+                {/* A desktop can't install the app, so offer a phone hand-off instead. */}
+                <div className="hidden lg:flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/download-qr.svg"
+                    alt="QR code linking to the PocketJobs app"
+                    width={88}
+                    height={88}
+                    className="w-[88px] h-[88px] shrink-0 rounded-lg bg-white p-1.5"
+                  />
+                  <p className="text-sm text-pj-slate-400 leading-snug w-48">
+                    On a computer? Scan this with your phone camera to download.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: an illustrative phone, drawn in code */}
+            <div className="animate-on-scroll flex justify-center lg:justify-end" aria-hidden="true">
+              <div className="relative">
+                {/* The alert that brought the provider to this job. It floats over the bottom of
+                    the phone so it never hides the title or the budget. */}
+                <div className="absolute -left-10 sm:-left-20 bottom-5 z-10 w-64 rounded-2xl bg-white/95 backdrop-blur shadow-2xl px-4 py-3 animate-float">
+                  <div className="flex items-center gap-2 text-[11px] text-pj-slate-500">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/pocket_jobs_logo.png" alt="" className="w-4 h-4 rounded" />
+                    <span className="font-semibold text-pj-slate-700">PocketJobs</span>
+                    <span className="ml-auto">now</span>
+                  </div>
+                  <div className="mt-1.5 text-sm font-semibold text-pj-slate-900">New job near you</div>
+                  <div className="text-sm text-pj-slate-500">Paint two bedrooms · $120</div>
+                </div>
+
+                <div className="relative w-[270px] h-[550px] rounded-[46px] bg-black p-3 shadow-[0_40px_80px_-20px_rgba(37,99,235,0.45)] ring-1 ring-white/10">
+                  <div className="relative h-full w-full rounded-[36px] bg-white overflow-hidden">
+                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-7 rounded-full bg-black" />
+                    <div className="px-5 pt-14">
+                      <div className="text-[13px] font-semibold text-pj-slate-900 text-center mb-5">Job details</div>
+                      <div className="text-[30px] leading-[1.05] font-extrabold tracking-tight text-pj-slate-900">
+                        Paint two bedrooms
+                      </div>
+                      <p className="mt-2.5 text-[13px] leading-relaxed text-pj-slate-500">
+                        Walls only, paint supplied. Furniture will be moved out.
+                      </p>
+                      <div className="mt-5 space-y-3.5">
+                        {[
+                          ["Location", "Avondale, Harare"],
+                          ["When", "This Saturday"],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-pj-slate-400">{label}</div>
+                            <div className="text-[13px] text-pj-slate-900">{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-5 rounded-2xl bg-pj-slate-100 py-4 text-center">
+                        <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-pj-slate-500">Job budget</div>
+                        <div className="text-[34px] font-extrabold tracking-tight text-pj-slate-900 leading-tight">$120</div>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 inset-x-0 p-4 bg-white">
+                      <div className="h-11 rounded-full bg-pj-blue-600 text-white text-[13px] font-semibold flex items-center justify-center">
+                        Make an offer
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

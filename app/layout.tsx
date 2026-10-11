@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "./lib/theme";
+import AppDownloadPrompt from "./components/AppDownloadPrompt";
 
 // Poppins is self-hosted by next/font at build time (downloaded once, then served from our
 // own origin), so there's no runtime dependency on Google Fonts.
@@ -60,6 +61,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans antialiased">
         {children}
+        {/* Site-wide "get the app" prompt; it decides for itself when (and whether) to show. */}
+        <AppDownloadPrompt />
       </body>
     </html>
   );

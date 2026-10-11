@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import StoreBadges from "./StoreBadges";
 
 const footerColumns = [
   {
@@ -100,6 +101,11 @@ export default function Footer() {
                 </a>
               ))}
             </div>
+
+            <h3 className="text-sm font-semibold text-white mt-8 mb-3 uppercase tracking-wider">
+              Get the app
+            </h3>
+            <StoreBadges />
           </div>
 
           {/* Footer Columns */}

@@ -10,6 +10,8 @@ const navLinks = [
   { label: "Categories", href: "#categories" },
   { label: "How it works", href: "#how-it-works" },
   { label: "Why PocketJobs", href: "#why-pocketjobs" },
+  // Leading slash so it also works from the other pages that share this navbar.
+  { label: "Get the app", href: "/#get-the-app" },
 ];
 
 export default function Navbar() {
