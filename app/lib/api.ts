@@ -42,6 +42,11 @@ import type {
   UserRole,
   VerificationItem,
   WorkforceRequest,
+  AudienceCounts,
+  Broadcast,
+  BroadcastChunkOutcome,
+  BroadcastDraft,
+  BroadcastProgress,
 } from "./types";
 
 const TOKEN_KEY = "pj_token";
@@ -380,6 +385,27 @@ export const api = {
     request<{ enquiry: EnquiryDetail }>(`/admin/enquiries/${id}`, { method: "PATCH", body: { status }, auth: true }),
 
   adminAudit: (limit = 100) => request<{ actions: AdminAction[] }>(`/admin/audit?limit=${limit}`, { auth: true }),
+
+  // Mass email
+  adminBroadcasts: () => request<{ broadcasts: Broadcast[] }>("/admin/broadcasts", { auth: true }),
+  adminBroadcastAudiences: () => request<{ audiences: AudienceCounts }>("/admin/broadcasts/audience", { auth: true }),
+  adminBroadcastPreview: (draft: BroadcastDraft) =>
+    request<{ subject: string; html: string }>("/admin/broadcasts/preview", { method: "POST", body: draft, auth: true }),
+  adminBroadcastTest: (draft: BroadcastDraft, to?: string | null) =>
+    request<{ ok: true; sent_to: string }>("/admin/broadcasts/test", {
+      method: "POST",
+      body: { draft, to: to || null },
+      auth: true,
+    }),
+  adminCreateBroadcast: (draft: BroadcastDraft) =>
+    request<{ broadcast: Broadcast }>("/admin/broadcasts", { method: "POST", body: draft, auth: true }),
+  adminBroadcastSend: (id: string) =>
+    request<{ outcome: BroadcastChunkOutcome; progress: BroadcastProgress; error?: string | null }>(
+      `/admin/broadcasts/${id}/send`,
+      { method: "POST", auth: true }
+    ),
+  adminBroadcastCancel: (id: string) =>
+    request<{ progress: BroadcastProgress }>(`/admin/broadcasts/${id}/cancel`, { method: "POST", auth: true }),
 
   conversations: () => request<{ conversations: Conversation[] }>("/conversations", { auth: true }),
   startConversation: (counterparty_id: string, job_id?: string) =>

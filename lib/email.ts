@@ -195,6 +195,128 @@ export function adminMessageEmail(p: {
   </div></body></html>`;
 }
 
+/** Swap the {{first_name}} placeholder for the recipient's first name. */
+export function personalize(text: string, firstName: string | null | undefined): string {
+  return text.replace(/\{\{\s*first_?name\s*\}\}/gi, firstName?.trim() || "there");
+}
+
+/**
+ * Turn bare URLs in already-escaped text into links. Runs AFTER esc(), so the URL is matched
+ * in its escaped form (&amp; and all), which is still a valid href. Trailing punctuation is
+ * left out of the link so "visit https://pocketjobs.co." doesn't link the full stop.
+ */
+function linkify(escaped: string): string {
+  return escaped.replace(
+    /(https?:\/\/[^\s<]+?)([.,;:!?)\]]*(?:\s|<|$))/g,
+    (_m, url: string, tail: string) =>
+      `<a href="${url}" style="color:#2563EB;text-decoration:underline">${url}</a>${tail}`
+  );
+}
+
+export interface BroadcastContent {
+  /** What the admin wrote, already personalised for this recipient. */
+  message: string;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  /** Personal unsubscribe page for this recipient. */
+  unsubscribeUrl: string;
+  /** A required notice, sent even to people who unsubscribed from announcements. */
+  serviceNotice: boolean;
+}
+
+/**
+ * An announcement an admin sent to many users at once. The admin's text goes out as they
+ * typed it (their own greeting and sign-off), with links made clickable. Every copy carries a
+ * personal unsubscribe link: bulk mail without one is both bad practice and what gets a
+ * sending domain marked as spam by Gmail and Yahoo.
+ */
+export function broadcastEmail(p: BroadcastContent): string {
+  const base = process.env.APP_PUBLIC_URL || "https://pocketjobs.co";
+  const cta =
+    p.ctaLabel && p.ctaUrl
+      ? `<a href="${esc(p.ctaUrl)}" style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px">${esc(p.ctaLabel)}</a>`
+      : `<a href="${base}" style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px">Open PocketJobs</a>`;
+  const why = p.serviceNotice
+    ? "This is a required notice about your PocketJobs account, so it is sent even if you have unsubscribed from announcements."
+    : "You're receiving this because you have a PocketJobs account.";
+
+  return `<!doctype html><html><body style="margin:0;background:#F8FAFC;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px">
+    <div style="font-size:20px;font-weight:800;color:#0F172A;margin-bottom:20px">
+      Pocket<span style="color:#2563EB">Jobs</span>
+    </div>
+    <div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:28px">
+      <div dir="auto" style="color:#0F172A;font-size:15px;line-height:1.7;padding-bottom:24px">
+        ${linkify(escMultiline(p.message))}
+      </div>
+      ${cta}
+    </div>
+    <p style="color:#94A3B8;font-size:12px;line-height:1.6;text-align:center;margin:20px 0 0">
+      ${why}<br>
+      <a href="${esc(p.unsubscribeUrl)}" style="color:#94A3B8;text-decoration:underline">Unsubscribe from announcements</a>
+      · PocketJobs · Harare, Zimbabwe
+    </p>
+  </div></body></html>`;
+}
+
+/** Plain-text twin of broadcastEmail. Sending both is better for deliverability. */
+export function broadcastText(p: BroadcastContent): string {
+  const base = process.env.APP_PUBLIC_URL || "https://pocketjobs.co";
+  const cta = p.ctaLabel && p.ctaUrl ? `${p.ctaLabel}: ${p.ctaUrl}` : `Open PocketJobs: ${base}`;
+  return `${p.message.trim()}\n\n${cta}\n\n--\nPocketJobs, Harare, Zimbabwe\nUnsubscribe from announcements: ${p.unsubscribeUrl}\n`;
+}
+
+export interface BatchEmail {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  headers?: Record<string, string>;
+}
+
+export type BatchResult =
+  | { ok: true; ids: (string | null)[] }
+  | { ok: false; status: number; name: string; message: string };
+
+/**
+ * Send up to 100 emails in one Resend call (POST /emails/batch). Unlike sendEmail this
+ * reports WHY a send failed: the caller has to tell "slow down" (rate limit) and "stop for
+ * today" (daily or monthly quota) apart from a bad request, because each needs a different
+ * response. A network failure comes back as status 0.
+ */
+export async function sendEmailBatch(emails: BatchEmail[]): Promise<BatchResult> {
+  if (!isEmailConfigured()) {
+    return { ok: false, status: 503, name: "not_configured", message: "Email sending is not configured on this server." };
+  }
+  try {
+    const res = await fetch("https://api.resend.com/emails/batch", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      },
+      body: JSON.stringify(emails.map((e) => ({ from: process.env.RESEND_FROM, ...e }))),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      data?: { id?: string }[];
+      name?: string;
+      message?: string;
+    };
+    if (res.ok) {
+      const ids = emails.map((_, i) => body.data?.[i]?.id ?? null);
+      return { ok: true, ids };
+    }
+    return {
+      ok: false,
+      status: res.status,
+      name: body.name ?? "error",
+      message: body.message ?? `The mail service returned ${res.status}.`,
+    };
+  } catch (e) {
+    return { ok: false, status: 0, name: "network_error", message: e instanceof Error ? e.message : "Network error" };
+  }
+}
+
 export interface EmailAttachment {
   /** File name shown to the recipient, e.g. "pocketjobs-data.json". */
   filename: string;

@@ -103,7 +103,10 @@ All under `app/api/`, `runtime = "nodejs"`, CORS-enabled. Bearer-token (app JWT)
   `GET/PATCH admin/disputes`, `GET admin/users`, `PATCH admin/users/:id`, `POST admin/users/:id/ban`,
   `GET admin/jobs`, `PATCH admin/jobs/:id`, `GET/POST admin/wallet/:userId`,
   `GET admin/enquiries`, `GET/PATCH admin/enquiries/:id`, `POST admin/enquiries/:id/reply`,
-  `GET admin/audit`. Plus the PUBLIC `POST /api/enquiries` (web + app intake, unauthenticated).
+  `GET admin/audit`, `GET/POST admin/broadcasts`, `GET admin/broadcasts/audience`,
+  `POST admin/broadcasts/{preview,test}`, `POST admin/broadcasts/:id/{send,cancel}`.
+  Plus the PUBLIC `POST /api/enquiries` (web + app intake, unauthenticated) and
+  `POST /api/email/unsubscribe` (signed-link opt-out, no auth).
   - **Every state-changing admin action writes an `admin_actions` row** (`lib/admin-audit.ts`) — the
     console moves money and revokes access, so actions must stay attributable to a named admin with a
     reason. Money actions reuse `lib/wallet.ts` and are atomic in SQL.
@@ -157,6 +160,20 @@ New tables vs. earlier: `workforce_requests`, `disputes`, and `users.auth_id`/`c
   off-platform, so nothing else can flip `bookings.payment_status` — `PATCH /api/bookings/:id/payment`
   is provider-only (customer gets 403) and idempotent. Letting a customer self-declare "paid" would
   let them close out a job the provider was never paid for.
+- **Mass email ("broadcasts", admin console → Email users).** Logic in `lib/broadcast.ts`. Creating a
+  broadcast freezes the recipient list into `email_broadcast_recipients` (one row per address); the
+  console then calls `POST /admin/broadcasts/:id/send` in a loop, 50 people per Resend batch call, because
+  ~650 emails can't fit inside one function's time limit. Each row records its own outcome, so a send
+  survives a closed tab or timeout and resumes without emailing anyone twice (rows are claimed with
+  `FOR UPDATE SKIP LOCKED`). A Resend daily/monthly quota error or a rejected API key **pauses** the
+  broadcast and re-queues everyone; a row left `sending` for 10+ minutes was interrupted mid-send and is
+  marked failed, never retried, since a duplicate is worse than a miss.
+  Every copy carries a personal unsubscribe link plus `List-Unsubscribe` headers. Opting out sets
+  `users.email_unsubscribed_at`, which **only broadcasts honour** — transactional email (offers,
+  bookings, support replies) still goes out. A broadcast marked "required service notice" also reaches
+  unsubscribed people; that is for terms/security notices only. The unsubscribe endpoint is POST-only
+  because mail scanners open every link in a message (`lib/unsubscribe.ts`, signed with `JWT_SECRET`).
+  Tables: `email_broadcasts`, `email_broadcast_recipients` (`scripts/migrate-email-broadcasts.mjs`).
 - **Soft-deleted users** (`users.deleted_at`) must be excluded from every public listing — providers list,
   provider detail, and favourites all filter `u.deleted_at IS NULL`.
 - 70 service categories, grouped into sectors (home & property, moving/errands, family care, professional,

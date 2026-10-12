@@ -577,3 +577,49 @@ export interface AdminAction {
   reason: string | null;
   created_at: string;
 }
+
+// ── Admin mass email ──────────────────────────────────────────────────────────
+
+export type BroadcastAudience = "all" | "customers" | "providers" | "corporate";
+export type BroadcastStatus = "sending" | "paused" | "sent" | "cancelled";
+
+/** What the admin is composing. */
+export interface BroadcastDraft {
+  audience: BroadcastAudience;
+  subject: string;
+  body: string;
+  cta_label?: string | null;
+  cta_url?: string | null;
+  /** Also reaches people who unsubscribed. Only for required account notices. */
+  service_notice: boolean;
+}
+
+export interface Broadcast {
+  id: string;
+  subject: string;
+  audience: BroadcastAudience;
+  service_notice: boolean;
+  status: BroadcastStatus;
+  status_note: string | null;
+  total: number;
+  sent_count: number;
+  failed_count: number;
+  created_at: string;
+  finished_at: string | null;
+  created_by_name: string | null;
+}
+
+export interface BroadcastProgress {
+  id: string;
+  status: BroadcastStatus;
+  status_note: string | null;
+  total: number;
+  sent: number;
+  failed: number;
+  remaining: number;
+  finished_at: string | null;
+}
+
+export type BroadcastChunkOutcome = "sent" | "rate_limited" | "paused" | "failed_chunk" | "done" | "stopped";
+
+export type AudienceCounts = Record<BroadcastAudience, { reach: number; unsubscribed: number }>;

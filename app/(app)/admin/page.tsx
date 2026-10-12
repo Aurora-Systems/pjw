@@ -11,8 +11,9 @@ import JobsTab from "../../components/admin/JobsTab";
 import EnquiriesTab from "../../components/admin/EnquiriesTab";
 import WalletTab, { type WalletTarget } from "../../components/admin/WalletTab";
 import AuditTab from "../../components/admin/AuditTab";
+import EmailTab from "../../components/admin/EmailTab";
 
-const TAB_KEYS = ["users", "jobs", "verifications", "disputes", "enquiries", "wallet", "audit"] as const;
+const TAB_KEYS = ["users", "jobs", "verifications", "disputes", "enquiries", "email", "wallet", "audit"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 const TAB_LABELS: Record<TabKey, string> = {
@@ -21,6 +22,7 @@ const TAB_LABELS: Record<TabKey, string> = {
   verifications: "Verifications",
   disputes: "Disputes",
   enquiries: "Enquiries",
+  email: "Email users",
   wallet: "Wallet",
   audit: "Audit",
 };
@@ -162,6 +164,7 @@ export default function AdminPage() {
       {tab === "enquiries" && <EnquiriesTab onCounts={setEnquiryCounts} />}
       {/* Keyed on the target so arriving from a Users row always lands on that wallet. */}
       {tab === "wallet" && <WalletTab key={walletTarget?.id ?? "none"} initialTarget={walletTarget} />}
+      {tab === "email" && <EmailTab />}
       {tab === "audit" && <AuditTab />}
     </>
   );

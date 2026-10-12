@@ -26,7 +26,7 @@ const SHOW_AFTER_MS = 8000;
 const RETRY_MS = 3000;
 const SNOOZE_DAYS = 14;
 
-const HIDDEN_ON = ["/login", "/signup", "/verify", "/auth", "/onboarding", "/payment", "/admin", "/download"];
+const HIDDEN_ON = ["/login", "/signup", "/verify", "/auth", "/onboarding", "/payment", "/admin", "/download", "/unsubscribe"];
 
 type Saved = { dismissedAt?: number; opened?: boolean };
 
