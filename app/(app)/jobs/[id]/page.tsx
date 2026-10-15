@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api, ApiError } from "../../../lib/api";
 import { Card, Badge, PageHeader, Loading, Empty } from "../../../components/ui";
+import ShareButton from "../../../components/ShareButton";
+import { budgetText, jobSharePath, jobShareText } from "../../../lib/share";
 import Button from "../../../components/Button";
 import type { Bid, Job } from "../../../lib/types";
 
@@ -62,6 +64,19 @@ export default function JobBidsPage() {
       <PageHeader
         title={job.title}
         subtitle={`${bids.length} ${bids.length === 1 ? "offer" : "offers"} · budget $${job.budget_min ?? "?"}–${job.budget_max ?? "?"}`}
+        action={
+          job.status === "open" ? (
+            // Sharing your own job gets it in front of more providers.
+            <ShareButton
+              path={jobSharePath(job.id)}
+              title={job.title}
+              text={jobShareText({
+                title: job.title,
+                budget: budgetText(job.budget_min, job.budget_max),
+              })}
+            />
+          ) : undefined
+        }
       />
 
       {multi && (

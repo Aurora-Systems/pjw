@@ -9,6 +9,18 @@ import ResendOtp from "../components/ResendOtp";
 import { api, setToken, ApiError } from "../lib/api";
 import { inputClass } from "../components/ui";
 
+/**
+ * Where to go after signing in. A shared job sends people here with ?next=/work?job=…, so they
+ * land back on that job. Only same-site paths are honoured (never "//evil.com"), and the offer
+ * page only makes sense for providers.
+ */
+function afterSignIn(role: string | undefined): string {
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/dashboard";
+  if (next.startsWith("/work") && role !== "provider") return "/dashboard";
+  return next;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
@@ -38,9 +50,9 @@ export default function LoginPage() {
     if (!otp) return setError("Enter the 6-digit code.");
     setBusy(true);
     try {
-      const { token } = await api.verifyOtp({ email: email.trim().toLowerCase(), otp: otp.trim() });
+      const { token, user } = await api.verifyOtp({ email: email.trim().toLowerCase(), otp: otp.trim() });
       setToken(token);
-      router.push("/dashboard");
+      router.push(afterSignIn(user?.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Invalid code.");
     } finally {

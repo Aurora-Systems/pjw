@@ -5,6 +5,8 @@ import { api, ApiError } from "../../lib/api";
 import { Card, Badge, PageHeader, Loading, Empty, Field, inputClass } from "../../components/ui";
 import Button from "../../components/Button";
 import CategoryPicker from "../../components/CategoryPicker";
+import ShareButton from "../../components/ShareButton";
+import { budgetText, jobSharePath, jobShareText } from "../../lib/share";
 import type { Category, OpenJob } from "../../lib/types";
 
 export default function WorkPage() {
@@ -16,6 +18,10 @@ export default function WorkPage() {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [offerJob, setOfferJob] = useState<OpenJob | null>(null);
+  // Arriving from a shared job link (/work?job=…): open that job's offer form once it loads.
+  const [sharedJobId, setSharedJobId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("job")
+  );
 
   useEffect(() => {
     api.categories().then((c) => setCategories(c.categories));
@@ -26,7 +32,12 @@ export default function WorkPage() {
     const { jobs } = await api.providerOpenJobs({ category, q: q || undefined, mine: mineOnly });
     setJobs(jobs);
     setLoading(false);
-  }, [category, q, mineOnly]);
+    if (sharedJobId) {
+      const shared = jobs.find((j) => j.id === sharedJobId);
+      if (shared && !shared.has_my_bid && !shared.i_am_hired) setOfferJob(shared);
+      setSharedJobId(null);
+    }
+  }, [category, q, mineOnly, sharedJobId]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -116,7 +127,7 @@ export default function WorkPage() {
                   `${j.bid_count} ${j.bid_count === 1 ? "offer" : "offers"}`,
                 ].filter(Boolean).join(" · ")}
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center gap-2">
                 {/* A multi-hire job stays open after a hire, so this provider may already have won it. */}
                 {j.i_am_hired ? (
                   <Badge color="green">You&apos;re hired</Badge>
@@ -125,6 +136,16 @@ export default function WorkPage() {
                 ) : (
                   <Button size="sm" onClick={() => setOfferJob(j)}>Make an offer</Button>
                 )}
+                <ShareButton
+                  path={jobSharePath(j.id)}
+                  title={j.title}
+                  text={jobShareText({
+                    title: j.title,
+                    budget: budgetText(j.budget_min, j.budget_max),
+                  })}
+                  size="sm"
+                  className="ml-auto"
+                />
               </div>
             </Card>
           ))}
